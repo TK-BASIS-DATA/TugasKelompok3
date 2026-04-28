@@ -1,7 +1,247 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="space-y-6">
+<section class="space-y-8">
+	<div class="animate-rise overflow-hidden rounded-[2rem] border border-white/70 bg-white/85 shadow-xl">
+		<div class="grid gap-0 lg:grid-cols-[1.3fr_0.7fr]">
+			<div class="relative p-6 md:p-8 lg:p-10">
+				<div class="absolute inset-0 -z-10 bg-gradient-to-br from-aero-cloud via-white to-[#F8F4E8]"></div>
+				<div class="absolute right-0 top-0 h-40 w-40 rounded-full bg-aero-mint/20 blur-3xl"></div>
+				<div class="absolute bottom-0 left-0 h-36 w-36 rounded-full bg-aero-sunrise/20 blur-3xl"></div>
 
-</div>
+				<div class="inline-flex items-center gap-2 rounded-full border border-aero-mint/20 bg-white/80 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-aero-steel">
+					<span class="h-2 w-2 rounded-full bg-aero-sunrise"></span>
+					Dashboard {{ user.get_role_display }}
+				</div>
+
+				<h1 class="mt-5 max-w-3xl font-display text-4xl leading-tight text-aero-steel md:text-5xl">
+					{{ full_name }}
+				</h1>
+				<p class="mt-3 max-w-2xl text-sm leading-6 text-aero-steel/80 md:text-base">
+					Ringkasan informasi pribadi dan aktivitas akun Anda.
+				</p>
+
+				<div class="mt-6 flex flex-wrap gap-3 text-sm font-semibold text-aero-ink">
+					<span class="rounded-full bg-white/90 px-4 py-2 shadow-sm">{{ email }}</span>
+					<span class="rounded-full bg-white/90 px-4 py-2 shadow-sm">{{ contact }}</span>
+					<span class="rounded-full bg-white/90 px-4 py-2 shadow-sm">{{ user.kewarganegaraan }}</span>
+				</div>
+			</div>
+
+			<div class="border-t border-white/70 bg-aero-ink p-6 text-white lg:border-l lg:border-t-0 lg:p-8">
+				<p class="text-sm font-semibold uppercase tracking-[0.2em] text-white/60">Profil Cepat</p>
+				<div class="mt-5 space-y-4">
+					<div class="rounded-3xl border border-white/10 bg-white/5 p-4">
+						<p class="text-xs uppercase tracking-[0.18em] text-white/55">Nama Lengkap</p>
+						<p class="mt-2 text-lg font-bold">{{ full_name }}</p>
+					</div>
+					<div class="rounded-3xl border border-white/10 bg-white/5 p-4">
+						<p class="text-xs uppercase tracking-[0.18em] text-white/55">Email</p>
+						<p class="mt-2 break-all text-sm font-semibold">{{ email }}</p>
+					</div>
+					<div class="rounded-3xl border border-white/10 bg-white/5 p-4">
+						<p class="text-xs uppercase tracking-[0.18em] text-white/55">Kontak</p>
+						<p class="mt-2 text-sm font-semibold">{{ country_code }} {{ mobile_number }}</p>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+		<article class="animate-rise rounded-3xl border border-white/80 bg-white/90 p-5 shadow-lg">
+			<p class="text-xs font-bold uppercase tracking-[0.18em] text-aero-steel/55">Nama</p>
+			<p class="mt-3 text-2xl font-display text-aero-steel">{{ full_name }}</p>
+		</article>
+		<article class="animate-rise rounded-3xl border border-white/80 bg-white/90 p-5 shadow-lg" style="animation-delay: .05s;">
+			<p class="text-xs font-bold uppercase tracking-[0.18em] text-aero-steel/55">Email</p>
+			<p class="mt-3 break-all text-lg font-semibold text-aero-ink">{{ email }}</p>
+		</article>
+		<article class="animate-rise rounded-3xl border border-white/80 bg-white/90 p-5 shadow-lg" style="animation-delay: .1s;">
+			<p class="text-xs font-bold uppercase tracking-[0.18em] text-aero-steel/55">Country Code + HP</p>
+			<p class="mt-3 text-lg font-semibold text-aero-ink">{{ contact }}</p>
+		</article>
+		<article class="animate-rise rounded-3xl border border-white/80 bg-white/90 p-5 shadow-lg" style="animation-delay: .15s;">
+			<p class="text-xs font-bold uppercase tracking-[0.18em] text-aero-steel/55">Kewarganegaraan</p>
+			<p class="mt-3 text-lg font-semibold text-aero-ink">{{ user.kewarganegaraan }}</p>
+		</article>
+	</div>
+
+	<div class="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+		<section class="animate-rise rounded-[2rem] border border-white/80 bg-white/90 p-6 shadow-xl md:p-8">
+			<div class="flex flex-wrap items-start justify-between gap-4">
+				<div>
+					<p class="text-xs font-bold uppercase tracking-[0.22em] text-aero-steel/55">Informasi Dasar</p>
+					<h2 class="mt-2 font-display text-3xl text-aero-steel">Data Akun</h2>
+				</div>
+				<a href="{% url 'profile_settings' %}" class="rounded-full bg-aero-steel px-4 py-2 text-sm font-bold text-white hover:bg-aero-ink">
+					Edit Profil
+				</a>
+			</div>
+
+			<div class="mt-6 grid gap-4 md:grid-cols-2">
+				<div class="rounded-3xl border border-aero-cloud bg-gradient-to-br from-white to-aero-cloud/45 p-5">
+					<p class="text-xs font-bold uppercase tracking-[0.18em] text-aero-steel/55">Tanggal Lahir</p>
+					<p class="mt-2 text-lg font-semibold text-aero-ink">{{ user.tanggal_lahir|date:"d F Y" }}</p>
+				</div>
+				<div class="rounded-3xl border border-aero-cloud bg-gradient-to-br from-white to-aero-cloud/45 p-5">
+					<p class="text-xs font-bold uppercase tracking-[0.18em] text-aero-steel/55">Role</p>
+					<p class="mt-2 text-lg font-semibold text-aero-ink">{{ user.get_role_display }}</p>
+				</div>
+			</div>
+
+			{% if user.role == 'member' and member_profile %}
+				<div class="mt-8 border-t border-aero-cloud pt-8">
+					<div class="flex flex-wrap items-start justify-between gap-4">
+						<div>
+							<p class="text-xs font-bold uppercase tracking-[0.22em] text-aero-steel/55">Member Area</p>
+							<h3 class="mt-2 font-display text-2xl text-aero-steel">Ringkasan Keanggotaan</h3>
+						</div>
+						<span class="rounded-full bg-aero-sunrise/15 px-4 py-2 text-sm font-bold text-aero-ink">Tier {{ member_profile.tier }}</span>
+					</div>
+
+					<div class="mt-6 grid gap-4 md:grid-cols-3">
+						<div class="rounded-3xl bg-aero-ink p-5 text-white shadow-lg">
+							<p class="text-xs font-bold uppercase tracking-[0.18em] text-white/60">Nomor Member</p>
+							<p class="mt-3 text-xl font-bold">{{ member_profile.nomor_member }}</p>
+						</div>
+						<div class="rounded-3xl border border-aero-mint/20 bg-white p-5 shadow-sm">
+							<p class="text-xs font-bold uppercase tracking-[0.18em] text-aero-steel/55">Tier Saat Ini</p>
+							<p class="mt-3 text-xl font-bold text-aero-steel">{{ member_profile.tier }}</p>
+						</div>
+						<div class="rounded-3xl border border-aero-mint/20 bg-white p-5 shadow-sm">
+							<p class="text-xs font-bold uppercase tracking-[0.18em] text-aero-steel/55">Tanggal Bergabung</p>
+							<p class="mt-3 text-xl font-bold text-aero-steel">{{ member_profile.tanggal_bergabung|date:"d F Y" }}</p>
+						</div>
+					</div>
+
+					<div class="mt-4 grid gap-4 md:grid-cols-2">
+						<div class="rounded-3xl border border-aero-mint/20 bg-gradient-to-br from-aero-mint/10 to-white p-5">
+							<p class="text-xs font-bold uppercase tracking-[0.18em] text-aero-steel/55">Total Miles</p>
+							<p class="mt-3 text-3xl font-display text-aero-steel">{{ derived_total_miles }}</p>
+							<p class="mt-2 text-sm text-aero-steel/70">Derived dari histori transaksi miles.</p>
+						</div>
+						<div class="rounded-3xl border border-aero-mint/20 bg-gradient-to-br from-aero-sunrise/10 to-white p-5">
+							<p class="text-xs font-bold uppercase tracking-[0.18em] text-aero-steel/55">Award Miles</p>
+							<p class="mt-3 text-3xl font-display text-aero-steel">{{ derived_award_miles }}</p>
+							<p class="mt-2 text-sm text-aero-steel/70">Derived dari transaksi positif yang tercatat.</p>
+						</div>
+					</div>
+
+					<div class="mt-8">
+						<div class="flex items-center justify-between gap-3">
+							<h4 class="font-display text-xl text-aero-steel">5 Transaksi Miles Terbaru</h4>
+							<span class="text-xs font-bold uppercase tracking-[0.18em] text-aero-steel/45">Aktivitas terkini</span>
+						</div>
+
+						<div class="mt-4 overflow-hidden rounded-3xl border border-aero-cloud bg-white">
+							<table class="min-w-full divide-y divide-aero-cloud text-left text-sm">
+								<thead class="bg-aero-cloud/45 text-aero-steel/75">
+									<tr>
+										<th class="px-4 py-3 font-bold">Tanggal</th>
+										<th class="px-4 py-3 font-bold">Deskripsi</th>
+										<th class="px-4 py-3 font-bold text-right">Miles</th>
+									</tr>
+								</thead>
+								<tbody class="divide-y divide-aero-cloud/70">
+									{% for transaction in recent_transactions %}
+										<tr class="align-top">
+											<td class="px-4 py-3 whitespace-nowrap text-aero-steel/75">{{ transaction.created_at|date:"d M Y" }}</td>
+											<td class="px-4 py-3 text-aero-ink">{{ transaction.deskripsi }}</td>
+											<td class="px-4 py-3 text-right font-bold {% if transaction.miles_delta < 0 %}text-red-600{% else %}text-emerald-600{% endif %}">
+												{% if transaction.miles_delta >= 0 %}+{% endif %}{{ transaction.miles_delta }}
+											</td>
+										</tr>
+									{% empty %}
+										<tr>
+											<td colspan="3" class="px-4 py-6 text-center text-aero-steel/60">Belum ada transaksi miles.</td>
+										</tr>
+									{% endfor %}
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			{% elif user.role == 'staf' and staff_profile %}
+				<div class="mt-8 border-t border-aero-cloud pt-8">
+					<div class="flex flex-wrap items-start justify-between gap-4">
+						<div>
+							<p class="text-xs font-bold uppercase tracking-[0.22em] text-aero-steel/55">Staf Area</p>
+							<h3 class="mt-2 font-display text-2xl text-aero-steel">Ringkasan Penugasan</h3>
+						</div>
+						<span class="rounded-full bg-aero-ink px-4 py-2 text-sm font-bold text-white">{{ staff_profile.id_staf }}</span>
+					</div>
+
+					<div class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+						<div class="rounded-3xl bg-aero-ink p-5 text-white shadow-lg">
+							<p class="text-xs font-bold uppercase tracking-[0.18em] text-white/60">ID Staf</p>
+							<p class="mt-3 text-xl font-bold">{{ staff_profile.id_staf }}</p>
+						</div>
+						<div class="rounded-3xl border border-aero-mint/20 bg-white p-5 shadow-sm">
+							<p class="text-xs font-bold uppercase tracking-[0.18em] text-aero-steel/55">Maskapai Bertugas</p>
+							<p class="mt-3 text-xl font-bold text-aero-steel">{{ staff_profile.get_kode_maskapai_display }}</p>
+							<p class="mt-1 text-sm text-aero-steel/65">Kode: {{ staff_profile.kode_maskapai }}</p>
+						</div>
+						<div class="rounded-3xl border border-aero-mint/20 bg-gradient-to-br from-aero-sunrise/10 to-white p-5 shadow-sm md:col-span-2 xl:col-span-1">
+							<p class="text-xs font-bold uppercase tracking-[0.18em] text-aero-steel/55">Klaim Menunggu</p>
+							<p class="mt-3 text-3xl font-display text-aero-steel">{{ pending_claims }}</p>
+							<p class="mt-2 text-sm text-aero-steel/70">Jumlah klaim missing miles yang masih berstatus Menunggu.</p>
+						</div>
+					</div>
+
+					<div class="mt-4 grid gap-4 md:grid-cols-2">
+						<div class="rounded-3xl border border-emerald-200 bg-emerald-50 p-5">
+							<p class="text-xs font-bold uppercase tracking-[0.18em] text-emerald-700/80">Disetujui Oleh Saya</p>
+							<p class="mt-3 text-3xl font-display text-emerald-700">{{ approved_by_me }}</p>
+						</div>
+						<div class="rounded-3xl border border-rose-200 bg-rose-50 p-5">
+							<p class="text-xs font-bold uppercase tracking-[0.18em] text-rose-700/80">Ditolak Oleh Saya</p>
+							<p class="mt-3 text-3xl font-display text-rose-700">{{ rejected_by_me }}</p>
+						</div>
+					</div>
+				</div>
+			{% endif %}
+		</section>
+
+		<aside class="space-y-6">
+			<section class="animate-rise rounded-[2rem] border border-white/80 bg-white/90 p-6 shadow-xl" style="animation-delay: .08s;">
+				<p class="text-xs font-bold uppercase tracking-[0.22em] text-aero-steel/55">Ringkasan Data</p>
+				<div class="mt-5 space-y-3 text-sm text-aero-ink">
+					<div class="flex items-center justify-between gap-3 rounded-2xl bg-aero-cloud/40 px-4 py-3">
+						<span>Nama lengkap</span>
+						<span class="font-bold text-right">{{ full_name }}</span>
+					</div>
+					<div class="flex items-center justify-between gap-3 rounded-2xl bg-aero-cloud/40 px-4 py-3">
+						<span>Email</span>
+						<span class="font-bold text-right break-all">{{ email }}</span>
+					</div>
+					<div class="flex items-center justify-between gap-3 rounded-2xl bg-aero-cloud/40 px-4 py-3">
+						<span>Contact</span>
+						<span class="font-bold text-right">{{ contact }}</span>
+					</div>
+					<div class="flex items-center justify-between gap-3 rounded-2xl bg-aero-cloud/40 px-4 py-3">
+						<span>Kewarganegaraan</span>
+						<span class="font-bold text-right">{{ user.kewarganegaraan }}</span>
+					</div>
+					<div class="flex items-center justify-between gap-3 rounded-2xl bg-aero-cloud/40 px-4 py-3">
+						<span>Tanggal lahir</span>
+						<span class="font-bold text-right">{{ user.tanggal_lahir|date:"d M Y" }}</span>
+					</div>
+				</div>
+			</section>
+
+			<section class="animate-rise rounded-[2rem] border border-white/80 bg-gradient-to-br from-aero-steel to-aero-ink p-6 text-white shadow-xl" style="animation-delay: .12s;">
+				<p class="text-xs font-bold uppercase tracking-[0.22em] text-white/60">Status Akun</p>
+				<h3 class="mt-3 font-display text-2xl">Akun aktif dan terhubung</h3>
+				<p class="mt-3 text-sm leading-6 text-white/75">
+					Gunakan menu navigasi di atas untuk pindah ke pengaturan profil dan halaman.
+				</p>
+				<div class="mt-6 flex flex-wrap gap-2 text-xs font-bold uppercase tracking-[0.18em] text-white/80">
+					<span class="rounded-full border border-white/15 bg-white/10 px-3 py-2">{{ user.get_role_display }}</span>
+					<span class="rounded-full border border-white/15 bg-white/10 px-3 py-2">Aero Miles</span>
+				</div>
+			</section>
+		</aside>
+	</div>
+</section>
 {% endblock %}

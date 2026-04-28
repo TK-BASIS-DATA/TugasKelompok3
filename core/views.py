@@ -1,7 +1,8 @@
 from django.contrib import messages
 from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
+from django.db.models import Q, Sum
+from django.db.models.functions import Coalesce
 from django.shortcuts import redirect, render
 from django.utils import timezone
 
@@ -118,15 +119,24 @@ def dashboard_view(request):
         "user_obj": request.user,
         "full_name": request.user.full_name,
         "contact": f"{request.user.country_code} {request.user.mobile_number}",
+        "email": request.user.email,
+        "country_code": request.user.country_code,
+        "mobile_number": request.user.mobile_number,
     }
 
     if request.user.role == User.Role.MEMBER:
         member_profile = getattr(request.user, "member_profile", None)
-        transactions = MilesTransaction.objects.filter(member=request.user)[:5]
+        recent_transactions = MilesTransaction.objects.filter(member=request.user)[:5]
+        totals = MilesTransaction.objects.filter(member=request.user).aggregate(
+            total_miles=Coalesce(Sum("miles_delta"), 0),
+            award_miles=Coalesce(Sum("miles_delta", filter=Q(miles_delta__gt=0)), 0),
+        )
         context.update(
             {
                 "member_profile": member_profile,
-                "transactions": transactions,
+                "derived_total_miles": totals["total_miles"],
+                "derived_award_miles": totals["award_miles"],
+                "recent_transactions": recent_transactions,
             }
         )
 
