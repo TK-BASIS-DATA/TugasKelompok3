@@ -1,7 +1,8 @@
 from django import forms
 from django.contrib.auth import authenticate
+from django.contrib.auth.forms import PasswordChangeForm
 
-from .models import MASKAPAI_CHOICES, User
+from .models import MASKAPAI_CHOICES, StaffProfile, User
 
 
 class LoginForm(forms.Form):
@@ -68,3 +69,32 @@ class MemberRegistrationForm(BaseRegistrationForm):
 
 class StaffRegistrationForm(BaseRegistrationForm):
     kode_maskapai = forms.ChoiceField(choices=MASKAPAI_CHOICES)
+
+
+class ProfileUpdateForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = [
+            "salutation",
+            "first_mid_name",
+            "last_name",
+            "country_code",
+            "mobile_number",
+            "tanggal_lahir",
+            "kewarganegaraan",
+        ]
+        widgets = {
+            "tanggal_lahir": forms.DateInput(attrs={"type": "date"}),
+        }
+
+
+class StaffMaskapaiForm(forms.ModelForm):
+    class Meta:
+        model = StaffProfile
+        fields = ["kode_maskapai"]
+
+
+class CustomPasswordChangeForm(PasswordChangeForm):
+    old_password = forms.CharField(label="Password Lama", widget=forms.PasswordInput)
+    new_password1 = forms.CharField(label="Password Baru", widget=forms.PasswordInput)
+    new_password2 = forms.CharField(label="Konfirmasi Password Baru", widget=forms.PasswordInput)

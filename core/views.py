@@ -1,15 +1,19 @@
 from django.contrib import messages
-from django.contrib.auth import login, logout
+from django.contrib.auth import login, logout, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.shortcuts import redirect, render
 from django.utils import timezone
 
 from .forms import (
+    CustomPasswordChangeForm,
     LoginForm,
     MemberRegistrationForm,
+    ProfileUpdateForm,
+    StaffMaskapaiForm,
     StaffRegistrationForm,
 )
-from .models import MemberProfile, MilesTransaction, StaffProfile, User
+from .models import ClaimMissingMiles, MemberProfile, MilesTransaction, StaffProfile, User
 
 
 def _next_member_number():
@@ -29,6 +33,9 @@ def _next_staff_id():
 
 
 def auth_page(request):
+    if request.user.is_authenticated:
+        return redirect("dashboard")
+
     login_form = LoginForm(request=request)
     member_form = MemberRegistrationForm(prefix="member")
     staff_form = StaffRegistrationForm(prefix="staf")
@@ -41,8 +48,7 @@ def auth_page(request):
             login_form = LoginForm(request=request, data=request.POST)
             if login_form.is_valid():
                 login(request, login_form.get_user())
-                messages.success(request, "Login berhasil.")
-                return redirect("auth_page")
+                return redirect("dashboard")
 
         if action == "register_member":
             active_register = "member"
@@ -104,3 +110,113 @@ def logout_view(request):
     logout(request)
     messages.info(request, "Anda telah logout.")
     return redirect("auth_page")
+
+
+@login_required
+def dashboard_view(request):
+    context = {
+        "user_obj": request.user,
+        "full_name": request.user.full_name,
+        "contact": f"{request.user.country_code} {request.user.mobile_number}",
+    }
+
+    if request.user.role == User.Role.MEMBER:
+        member_profile = getattr(request.user, "member_profile", None)
+        transactions = MilesTransaction.objects.filter(member=request.user)[:5]
+        context.update(
+            {
+                "member_profile": member_profile,
+                "transactions": transactions,
+            }
+        )
+
+    if request.user.role == User.Role.STAF:
+        staff_profile = getattr(request.user, "staff_profile", None)
+        pending_claims = ClaimMissingMiles.objects.filter(
+            status_penerimaan=ClaimMissingMiles.Status.MENUNGGU
+        ).count()
+        approved_by_me = ClaimMissingMiles.objects.filter(
+            email_staf=request.user,
+            status_penerimaan=ClaimMissingMiles.Status.DISETUJUI,
+        ).count()
+        rejected_by_me = ClaimMissingMiles.objects.filter(
+            email_staf=request.user,
+            status_penerimaan=ClaimMissingMiles.Status.DITOLAK,
+        ).count()
+
+        context.update(
+            {
+                "staff_profile": staff_profile,
+                "pending_claims": pending_claims,
+                "approved_by_me": approved_by_me,
+                "rejected_by_me": rejected_by_me,
+            }
+        )
+
+    return render(request, "core/dashboard.html", context)
+
+
+@login_required
+def profile_settings_view(request):
+    user_form = ProfileUpdateForm(instance=request.user)
+    password_form = CustomPasswordChangeForm(user=request.user)
+    staff_form = None
+
+    if request.user.role == User.Role.STAF:
+        staff_form = StaffMaskapaiForm(instance=request.user.staff_profile)
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+
+        if action == "update_profile":
+            user_form = ProfileUpdateForm(request.POST, instance=request.user)
+            if request.user.role == User.Role.STAF:
+                staff_form = StaffMaskapaiForm(request.POST, instance=request.user.staff_profile)
+                if user_form.is_valid() and staff_form.is_valid():
+                    user_form.save()
+                    staff_form.save()
+                    messages.success(request, "Profil berhasil diperbarui.")
+                    return redirect("profile_settings")
+            else:
+                if user_form.is_valid():
+                    user_form.save()
+                    messages.success(request, "Profil berhasil diperbarui.")
+                    return redirect("profile_settings")
+
+        if action == "change_password":
+            password_form = CustomPasswordChangeForm(user=request.user, data=request.POST)
+            if password_form.is_valid():
+                user = password_form.save()
+                update_session_auth_hash(request, user)
+                messages.success(request, "Password berhasil diperbarui.")
+                return redirect("profile_settings")
+
+    context = {
+        "user_form": user_form,
+        "password_form": password_form,
+    }
+
+    if request.user.role == User.Role.MEMBER:
+        context["member_profile"] = request.user.member_profile
+
+    if request.user.role == User.Role.STAF:
+        context["staff_profile"] = request.user.staff_profile
+        context["staff_form"] = staff_form
+
+    return render(request, "core/profile_settings.html", context)
+
+
+@login_required
+def member_page(request, title):
+    if request.user.role != User.Role.MEMBER:
+        messages.error(request, "Halaman ini khusus member.")
+        return redirect("dashboard")
+    return render(request, "core/placeholder.html", {"title": title})
+
+
+@login_required
+def staff_page(request, title):
+    if request.user.role != User.Role.STAF:
+        messages.error(request, "Halaman ini khusus staf.")
+        return redirect("dashboard")
+    return render(request, "core/placeholder.html", {"title": title})

@@ -1,86 +1,78 @@
 {% extends 'base.html' %}
 
 {% block content %}
-{% if user.is_authenticated %}
-    <section class="animate-rise rounded-3xl border border-white/70 bg-white/90 p-8 text-center shadow-lg">
-        <h1 class="font-display text-3xl text-aero-steel">Anda Sudah Login</h1>
-        <p class="mt-2 text-sm text-aero-steel/80">Halo {{ user.email }}, gunakan tombol logout untuk keluar dari sesi.</p>
-        <a href="{% url 'logout' %}" class="mt-6 inline-block rounded-xl bg-aero-steel px-6 py-3 font-bold text-white hover:bg-aero-ink">Logout</a>
-    </section>
-{% else %}
-    <section class="grid gap-6 lg:grid-cols-2">
-        <div class="animate-rise rounded-3xl border border-white/70 bg-white/90 p-6 shadow-lg md:p-8">
-            <h1 class="font-display text-3xl text-aero-steel">Login Aero Miles</h1>
-            <p class="mt-2 text-sm text-aero-steel/80">Masuk menggunakan email dan password.</p>
+<section class="grid gap-6 lg:grid-cols-2">
+    <div class="animate-rise rounded-3xl border border-white/70 bg-white/90 p-6 shadow-lg md:p-8">
+        <h1 class="font-display text-3xl text-aero-steel">Login Aero Miles</h1>
+        <p class="mt-2 text-sm text-aero-steel/80">Masuk menggunakan email dan password.</p>
 
-            <form method="post" class="mt-6 space-y-4">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="login">
+        <form method="post" class="mt-6 space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="login">
 
-                <div>
-                    <label class="mb-1 block text-sm font-semibold">Email</label>
-                    {{ login_form.email }}
-                    {% if login_form.email.errors %}<p class="mt-1 text-xs text-red-600">{{ login_form.email.errors.0 }}</p>{% endif %}
-                </div>
-                <div>
-                    <label class="mb-1 block text-sm font-semibold">Password</label>
-                    {{ login_form.password }}
-                    {% if login_form.password.errors %}<p class="mt-1 text-xs text-red-600">{{ login_form.password.errors.0 }}</p>{% endif %}
-                </div>
-
-                {% if login_form.non_field_errors %}
-                    <p class="text-xs text-red-600">{{ login_form.non_field_errors.0 }}</p>
-                {% endif %}
-
-                <button type="submit" class="w-full rounded-xl bg-aero-steel px-4 py-3 font-bold text-white hover:bg-aero-ink">Log In</button>
-            </form>
-        </div>
-
-        <div class="animate-rise rounded-3xl border border-white/70 bg-white/90 p-6 shadow-lg md:p-8" style="animation-delay: .12s;">
-            <h2 class="font-display text-3xl text-aero-steel">Registrasi</h2>
-            <p class="mt-2 text-sm text-aero-steel/80">Pilih role Member atau Staf.</p>
-
-            <div class="mt-4 grid grid-cols-2 gap-2 rounded-xl bg-aero-cloud p-1 text-sm font-bold">
-                <a href="?role=member" class="rounded-lg px-3 py-2 text-center {% if active_register == 'member' %}bg-white text-aero-ink{% else %}text-aero-steel/80{% endif %}">Member</a>
-                <a href="?role=staf" class="rounded-lg px-3 py-2 text-center {% if active_register == 'staf' %}bg-white text-aero-ink{% else %}text-aero-steel/80{% endif %}">Staf</a>
+            <div>
+                <label class="mb-1 block text-sm font-semibold">Email</label>
+                {{ login_form.email }}
+                {% if login_form.email.errors %}<p class="mt-1 text-xs text-red-600">{{ login_form.email.errors.0 }}</p>{% endif %}
+            </div>
+            <div>
+                <label class="mb-1 block text-sm font-semibold">Password</label>
+                {{ login_form.password }}
+                {% if login_form.password.errors %}<p class="mt-1 text-xs text-red-600">{{ login_form.password.errors.0 }}</p>{% endif %}
             </div>
 
-            {% if active_register == 'staf' %}
-                <form method="post" class="mt-6 grid gap-3">
-                    {% csrf_token %}
-                    <input type="hidden" name="action" value="register_staf">
-                    {% for field in staff_form %}
-                        <div>
-                            <label class="mb-1 block text-sm font-semibold">{{ field.label }}</label>
-                            {{ field }}
-                            {% if field.errors %}<p class="mt-1 text-xs text-red-600">{{ field.errors.0 }}</p>{% endif %}
-                        </div>
-                    {% endfor %}
-                    {% if staff_form.non_field_errors %}
-                        <p class="text-xs text-red-600">{{ staff_form.non_field_errors.0 }}</p>
-                    {% endif %}
-                    <button type="submit" class="mt-2 w-full rounded-xl bg-aero-sunrise px-4 py-3 font-bold text-aero-ink hover:brightness-95">Daftar Sebagai Staf</button>
-                </form>
-            {% else %}
-                <form method="post" class="mt-6 grid gap-3">
-                    {% csrf_token %}
-                    <input type="hidden" name="action" value="register_member">
-                    {% for field in member_form %}
-                        <div>
-                            <label class="mb-1 block text-sm font-semibold">{{ field.label }}</label>
-                            {{ field }}
-                            {% if field.errors %}<p class="mt-1 text-xs text-red-600">{{ field.errors.0 }}</p>{% endif %}
-                        </div>
-                    {% endfor %}
-                    {% if member_form.non_field_errors %}
-                        <p class="text-xs text-red-600">{{ member_form.non_field_errors.0 }}</p>
-                    {% endif %}
-                    <button type="submit" class="mt-2 w-full rounded-xl bg-aero-sunrise px-4 py-3 font-bold text-aero-ink hover:brightness-95">Daftar Sebagai Member</button>
-                </form>
+            {% if login_form.non_field_errors %}
+                <p class="text-xs text-red-600">{{ login_form.non_field_errors.0 }}</p>
             {% endif %}
+
+            <button type="submit" class="w-full rounded-xl bg-aero-steel px-4 py-3 font-bold text-white hover:bg-aero-ink">Log In</button>
+        </form>
+    </div>
+
+    <div class="animate-rise rounded-3xl border border-white/70 bg-white/90 p-6 shadow-lg md:p-8" style="animation-delay: .12s;">
+        <h2 class="font-display text-3xl text-aero-steel">Registrasi</h2>
+        <p class="mt-2 text-sm text-aero-steel/80">Pilih role Member atau Staf.</p>
+
+        <div class="mt-4 grid grid-cols-2 gap-2 rounded-xl bg-aero-cloud p-1 text-sm font-bold">
+            <a href="?role=member" class="rounded-lg px-3 py-2 text-center {% if active_register == 'member' %}bg-white text-aero-ink{% else %}text-aero-steel/80{% endif %}">Member</a>
+            <a href="?role=staf" class="rounded-lg px-3 py-2 text-center {% if active_register == 'staf' %}bg-white text-aero-ink{% else %}text-aero-steel/80{% endif %}">Staf</a>
         </div>
-    </section>
-{% endif %}
+
+        {% if active_register == 'staf' %}
+            <form method="post" class="mt-6 grid gap-3">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="register_staf">
+                {% for field in staff_form %}
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}<p class="mt-1 text-xs text-red-600">{{ field.errors.0 }}</p>{% endif %}
+                    </div>
+                {% endfor %}
+                {% if staff_form.non_field_errors %}
+                    <p class="text-xs text-red-600">{{ staff_form.non_field_errors.0 }}</p>
+                {% endif %}
+                <button type="submit" class="mt-2 w-full rounded-xl bg-aero-sunrise px-4 py-3 font-bold text-aero-ink hover:brightness-95">Daftar Sebagai Staf</button>
+            </form>
+        {% else %}
+            <form method="post" class="mt-6 grid gap-3">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="register_member">
+                {% for field in member_form %}
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}<p class="mt-1 text-xs text-red-600">{{ field.errors.0 }}</p>{% endif %}
+                    </div>
+                {% endfor %}
+                {% if member_form.non_field_errors %}
+                    <p class="text-xs text-red-600">{{ member_form.non_field_errors.0 }}</p>
+                {% endif %}
+                <button type="submit" class="mt-2 w-full rounded-xl bg-aero-sunrise px-4 py-3 font-bold text-aero-ink hover:brightness-95">Daftar Sebagai Member</button>
+            </form>
+        {% endif %}
+    </div>
+</section>
 
 <style>
     input, select {
