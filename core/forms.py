@@ -71,6 +71,7 @@ class StaffRegistrationForm(BaseRegistrationForm):
     kode_maskapai = forms.ChoiceField(choices=MASKAPAI_CHOICES)
 
 
+
 class ProfileUpdateForm(forms.ModelForm):
     class Meta:
         model = User

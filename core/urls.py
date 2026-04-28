@@ -28,4 +28,5 @@ urlpatterns = [
         {"title": "Laporan Transaksi"},
         name="staf_laporan_transaksi",
     ),
+    path("pengaturan-profile/", views.profile_settings_view, name="profile_settings"),
 ]

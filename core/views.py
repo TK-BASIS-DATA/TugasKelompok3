@@ -16,7 +16,6 @@ from .forms import (
 )
 from .models import ClaimMissingMiles, MemberProfile, MilesTransaction, StaffProfile, User
 
-
 def _next_member_number():
     last_member = MemberProfile.objects.order_by("-nomor_member").first()
     if not last_member:
