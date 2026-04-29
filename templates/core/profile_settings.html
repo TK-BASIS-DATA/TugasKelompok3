@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<section class="grid gap-6 xl:grid-cols-3">
+    <div class="animate-rise rounded-3xl border border-white/70 bg-white/90 p-6 shadow-lg xl:col-span-2">
+        <h1 class="font-display text-3xl text-aero-steel">Pengaturan Profil</h1>
+        <p class="mt-1 text-sm text-aero-steel/80">Perbarui informasi akun Anda.</p>
+
+        <div class="mt-5 rounded-2xl bg-aero-cloud/60 p-4 text-sm">
+            <p><span class="font-semibold">Email:</span> {{ user.email }}</p>
+            {% if user.role == 'member' and member_profile %}
+                <p><span class="font-semibold">Nomor Member:</span> {{ member_profile.nomor_member }}</p>
+                <p><span class="font-semibold">Tanggal Bergabung:</span> {{ member_profile.tanggal_bergabung }}</p>
+            {% endif %}
+            {% if user.role == 'staf' and staff_profile %}
+                <p><span class="font-semibold">ID Staf:</span> {{ staff_profile.id_staf }}</p>
+            {% endif %}
+        </div>
+
+        <form method="post" class="mt-6 space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="update_profile">
+
+            <div class="grid gap-4 md:grid-cols-2">
+                {% for field in user_form %}
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold">{{ field.label }}</label>
+                        {{ field }}
+                        {% if field.errors %}<p class="mt-1 text-xs text-red-600">{{ field.errors.0 }}</p>{% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+
+            {% if user.role == 'staf' and staff_form %}
+                <div>
+                    <label class="mb-1 block text-sm font-semibold">Kode Maskapai</label>
+                    {{ staff_form.kode_maskapai }}
+                    {% if staff_form.kode_maskapai.errors %}<p class="mt-1 text-xs text-red-600">{{ staff_form.kode_maskapai.errors.0 }}</p>{% endif %}
+                </div>
+            {% endif %}
+
+            <button type="submit" class="rounded-xl bg-aero-steel px-5 py-3 font-bold text-white hover:bg-aero-ink">Simpan</button>
+        </form>
+    </div>
+
+    <div class="animate-rise rounded-3xl border border-white/70 bg-white/90 p-6 shadow-lg" style="animation-delay: .12s;">
+        <h2 class="font-display text-2xl text-aero-steel">Ubah Password</h2>
+        <form method="post" class="mt-4 space-y-4">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="change_password">
+
+            {% for field in password_form %}
+                <div>
+                    <label class="mb-1 block text-sm font-semibold">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}<p class="mt-1 text-xs text-red-600">{{ field.errors.0 }}</p>{% endif %}
+                </div>
+            {% endfor %}
+
+            <button type="submit" class="w-full rounded-xl bg-aero-sunrise px-4 py-3 font-bold text-aero-ink hover:brightness-95">Simpan Password</button>
+        </form>
+    </div>
+</section>
+
+<style>
+    input, select {
+        width: 100%;
+        border-radius: 0.75rem;
+        border: 1px solid rgba(9, 38, 53, 0.15);
+        background: rgba(255, 255, 255, 0.92);
+        padding: 0.7rem 0.85rem;
+        font-size: 0.92rem;
+    }
+
+    input:focus, select:focus {
+        outline: none;
+        border-color: #1B4242;
+        box-shadow: 0 0 0 3px rgba(92, 131, 116, 0.18);
+    }
+</style>
+{% endblock %}
