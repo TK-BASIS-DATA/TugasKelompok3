@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mx-auto py-6">
+  <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
+    <h1 class="text-2xl font-bold">Daftar Identitas Saya</h1>
+    <div class="bg-white rounded-xl shadow p-4 border border-gray-200 flex items-center">
+      <a href="{% url 'member_identitas_tambah' %}" class="btn btn-success">+ Tambah Identitas</a>
+    </div>
+  </div>
+  <div class="overflow-x-auto bg-white rounded-xl shadow border border-gray-200">
+    <table class="w-full text-sm text-left text-gray-700">
+      <thead class="bg-aero-mint text-white">
+        <tr>
+          <th class="px-4 py-3 border-b">Nomor Dokumen</th>
+          <th class="px-4 py-3 border-b">Jenis</th>
+          <th class="px-4 py-3 border-b">Negara Penerbit</th>
+          <th class="px-4 py-3 border-b">Tanggal Terbit</th>
+          <th class="px-4 py-3 border-b">Tanggal Habis</th>
+          <th class="px-4 py-3 border-b">Status</th>
+          <th class="px-4 py-3 border-b">Aksi</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for i in identitas_list %}
+        <tr class="hover:bg-aero-cloud/10 transition">
+          <td class="px-4 py-2 border-b">{{ i.nomor }}</td>
+          <td class="px-4 py-2 border-b">{{ i.jenis }}</td>
+          <td class="px-4 py-2 border-b">{{ i.negara_penerbit }}</td>
+          <td class="px-4 py-2 border-b">{{ i.tanggal_terbit }}</td>
+          <td class="px-4 py-2 border-b">{{ i.tanggal_habis }}</td>
+          <td class="px-4 py-2 border-b">
+            {% if i.is_expired %}
+              <span class="badge bg-red-500 text-white">Kedaluwarsa</span>
+            {% else %}
+              <span class="badge bg-green-500 text-white">Aktif</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-2 border-b">
+            <div class="flex gap-2">
+              <div class="bg-white rounded-lg shadow border border-gray-200 px-2 py-1 flex gap-2">
+                <a href="{% url 'member_identitas_ubah' i.nomor %}" class="btn btn-xs btn-warning">Edit</a>
+                <p>|</p>
+                <a href="{% url 'member_identitas_hapus' i.nomor %}" class="btn btn-xs btn-error">Hapus</a>
+              </div>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" class="text-center py-4">Belum ada identitas.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

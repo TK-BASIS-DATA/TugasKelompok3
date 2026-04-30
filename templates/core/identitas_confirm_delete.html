@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mx-auto py-6 max-w-lg">
+  <div class="bg-white rounded-xl shadow p-6">
+    <h1 class="text-2xl font-bold mb-4">Konfirmasi Hapus Identitas</h1>
+    <div class="mb-4">
+      <p>Apakah Anda yakin ingin menghapus dokumen identitas berikut?</p>
+      <ul class="list-disc ml-6 mt-2">
+        <li><b>Nomor Dokumen:</b> {{ identitas.nomor }}</li>
+        <li><b>Jenis:</b> {{ identitas.jenis }}</li>
+        <li><b>Negara Penerbit:</b> {{ identitas.negara_penerbit }}</li>
+        <li><b>Tanggal Terbit:</b> {{ identitas.tanggal_terbit }}</li>
+        <li><b>Tanggal Habis:</b> {{ identitas.tanggal_habis }}</li>
+      </ul>
+      <p class="mt-2 text-red-600">Tindakan ini tidak dapat dibatalkan.</p>
+    </div>
+    <form method="post" class="flex gap-2 mt-6">
+      <div class="bg-white rounded-lg shadow border border-red-300 px-4 py-3 flex gap-2">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-error">Ya, Hapus</button>
+        <p>|</p>
+        <a href="{% url 'member_identitas' %}" class="btn btn-secondary">Batal</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
