@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8 animate-rise">
+
+    <div class="flex items-center justify-between mb-2">
+    <h1 class="text-2xl font-display font-bold text-aero-ink">Redeem Hadiah</h1>
+    <button onclick="document.getElementById('modalRedeem').classList.remove('hidden')"
+    class="bg-aero-steel text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-aero-ink transition">
+    + Redeem Sekarang
+    </button>
+    </div>
+    <p class="text-sm text-gray-500 mb-6">Award Miles tersedia: <span class="font-bold text-aero-steel">{{ award_miles|floatformat:"0" }}</span></p>
+
+    <!-- Riwayat Redeem -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+    <div class="px-5 py-4 border-b border-gray-100">
+        <h2 class="font-semibold text-aero-ink">Riwayat Redeem</h2>
+    </div>
+    <table class="w-full text-sm">
+        <thead class="bg-gray-50 text-gray-600">
+        <tr>
+        <th class="px-4 py-3 text-left">ID</th>
+        <th class="px-4 py-3 text-left">Hadiah</th>
+        <th class="px-4 py-3 text-right">Miles Digunakan</th>
+        <th class="px-4 py-3 text-left">Status</th>
+        <th class="px-4 py-3 text-left">Waktu</th>
+        <th class="px-4 py-3 text-left">Catatan</th>
+        </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+        {% for r in redeem_list %}
+        <tr class="hover:bg-gray-50">
+        <td class="px-4 py-3 font-mono text-xs text-aero-steel font-semibold">{{ r.redeem_id }}</td>
+        <td class="px-4 py-3">
+            <div class="font-semibold">{{ r.hadiah.nama }}</div>
+            <div class="text-xs text-gray-400">{{ r.hadiah.penyedia.nama }}</div>
+        </td>
+        <td class="px-4 py-3 text-right font-semibold text-red-600">-{{ r.miles_digunakan|floatformat:"0" }}</td>
+        <td class="px-4 py-3">
+            {% if r.status == "Selesai" %}
+            <span class="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs font-semibold">Selesai</span>
+            {% elif r.status == "Dibatalkan" %}
+            <span class="bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-xs font-semibold">Dibatalkan</span>
+            {% else %}
+            <span class="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full text-xs font-semibold">Diproses</span>
+            {% endif %}
+        </td>
+        <td class="px-4 py-3 text-gray-500 text-xs">{{ r.timestamp|date:"Y-m-d H:i" }}</td>
+        <td class="px-4 py-3 text-gray-500">{{ r.catatan|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="px-4 py-8 text-center text-gray-400">Belum ada riwayat redeem.</td></tr>
+        {% endfor %}
+    </tbody>
+    </table>
+    </div>
+</div>
+
+<!-- Modal Redeem -->
+<div id="modalRedeem" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative">
+    <button onclick="document.getElementById('modalRedeem').classList.add('hidden')"
+      class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl">✕</button>
+    <h2 class="text-lg font-bold text-aero-ink mb-1">Redeem Hadiah</h2>
+    <p class="text-xs text-gray-400 mb-4">Award Miles tersedia: <b>{{ award_miles|floatformat:"0" }}</b></p>
+
+    {% if form.non_field_errors %}
+      <div class="mb-3 px-3 py-2 rounded-lg bg-red-50 text-red-700 text-sm">
+        {% for e in form.non_field_errors %}{{ e }}{% endfor %}
+      </div>
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">Pilih Hadiah</label>
+          {{ form.hadiah }}
+          {% if form.hadiah.errors %}
+            <p class="text-red-500 text-xs mt-1">{{ form.hadiah.errors.0 }}</p>
+          {% endif %}
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">Catatan (opsional)</label>
+          {{ form.catatan }}
+        </div>
+    </div>
+    <button type="submit"
+        class="mt-5 w-full bg-aero-steel text-white py-2 rounded-lg font-semibold hover:bg-aero-ink transition">
+        Konfirmasi Redeem
+    </button>
+    </form>
+    </div>
+</div>
+
+<script>
+{% if form.errors %}
+document.getElementById('modalRedeem').classList.remove('hidden');
+{% endif %}
+</script>
+{% endblock %}

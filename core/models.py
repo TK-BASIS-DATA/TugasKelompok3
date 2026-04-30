@@ -176,6 +176,63 @@ class Hadiah(models.Model):
         return self.program_end < timezone.localdate()
 
 
+class RedeemHadiah(models.Model):
+    class Status(models.TextChoices):
+        DIPROSES = "Diproses", "Diproses"
+        SELESAI = "Selesai", "Selesai"
+        DIBATALKAN = "Dibatalkan", "Dibatalkan"
+
+    member = models.ForeignKey(User, on_delete=models.CASCADE, related_name="redeem_hadiah")
+    hadiah = models.ForeignKey(Hadiah, on_delete=models.PROTECT, related_name="redeem_hadiah")
+    miles_digunakan = models.PositiveIntegerField()
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.DIPROSES)
+    catatan = models.CharField(max_length=255, blank=True, default="")
+    timestamp = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-timestamp"]
+
+    def __str__(self):
+        return self.redeem_id
+
+    @property
+    def redeem_id(self):
+        return f"RDM-{self.pk:03d}"
+
+
+class AwardMilesPackage(models.Model):
+    kode_package = models.CharField(max_length=20, primary_key=True)
+    nama = models.CharField(max_length=100)
+    deskripsi = models.TextField(blank=True, default="")
+    miles = models.PositiveIntegerField()
+    harga_idr = models.PositiveIntegerField()
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["miles", "kode_package"]
+
+    def __str__(self):
+        return f"{self.kode_package} - {self.nama}"
+
+
+class PembelianPackage(models.Model):
+    member = models.ForeignKey(User, on_delete=models.CASCADE, related_name="pembelian_package")
+    package = models.ForeignKey(
+        AwardMilesPackage,
+        on_delete=models.PROTECT,
+        related_name="pembelian_package",
+    )
+    harga_dibayar = models.PositiveIntegerField()
+    miles_diterima = models.PositiveIntegerField()
+    timestamp = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["-timestamp"]
+
+    def __str__(self):
+        return f"{self.member.email} - {self.package.nama}"
+
+
 class ClaimMissingMiles(models.Model):
     class Status(models.TextChoices):
         MENUNGGU = "Menunggu", "Menunggu"
