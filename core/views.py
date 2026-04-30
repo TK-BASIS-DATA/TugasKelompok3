@@ -18,11 +18,12 @@ from .forms import (
     MemberRegistrationForm,
     MitraForm,
     ProfileUpdateForm,
+    RedeemHadiahForm,
     StaffMaskapaiForm,
     StaffRegistrationForm,
     TransferForm,
 )
-from .models import BANDARA_CHOICES, ClaimMissingMiles, Hadiah, MemberProfile, MilesTransaction, Mitra, Penyedia, StaffProfile, Transfer, User
+from .models import BANDARA_CHOICES, AwardMilesPackage, ClaimMissingMiles, Hadiah, MemberProfile, MilesTransaction, Mitra, PembelianPackage, Penyedia, RedeemHadiah, StaffProfile, Transfer, User
 
 def _next_member_number():
     last_member = MemberProfile.objects.order_by("-nomor_member").first()
@@ -783,11 +784,10 @@ def mitra_delete_view(request, email_mitra):
         messages.success(request, f"Mitra {nama_mitra} beserta hadiah terkait berhasil dihapus.")
     return redirect("staf_kelola_mitra")
 
+
 # ──────────────────────────────────────────────
 # CRUD IDENTITAS MEMBER – MEMBER
 # ──────────────────────────────────────────────
-
-from django.contrib.auth.decorators import login_required
 
 @login_required
 def identitas_list_view(request):
@@ -823,7 +823,6 @@ def identitas_update_view(request, nomor):
     if not identitas:
         messages.error(request, "Dokumen identitas tidak ditemukan.")
         return redirect("member_identitas")
-    # Nomor tidak bisa diubah
     class EditIdentitasForm(IdentitasForm):
         class Meta(IdentitasForm.Meta):
             exclude = ["nomor"]
@@ -850,3 +849,268 @@ def identitas_delete_view(request, nomor):
         messages.success(request, "Identitas berhasil dihapus.")
         return redirect("member_identitas")
     return render(request, "core/identitas_confirm_delete.html", {"identitas": identitas})
+
+
+# ──────────────────────────────────────────────
+# REDEEM HADIAH – MEMBER (CR)
+# ──────────────────────────────────────────────
+
+@login_required
+def member_redeem_view(request):
+    if request.user.role != User.Role.MEMBER:
+        messages.error(request, "Halaman ini khusus member.")
+        return redirect("dashboard")
+
+    member_profile = getattr(request.user, "member_profile", None)
+    award_miles = member_profile.award_miles if member_profile else 0
+    form = RedeemHadiahForm(member=request.user)
+    redeem_list = RedeemHadiah.objects.filter(member=request.user).select_related("hadiah")
+
+    if request.method == "POST":
+        form = RedeemHadiahForm(member=request.user, data=request.POST)
+        if form.is_valid():
+            hadiah = form.cleaned_data["hadiah"]
+            catatan = form.cleaned_data.get("catatan", "")
+            with transaction.atomic():
+                redeem = RedeemHadiah.objects.create(
+                    member=request.user,
+                    hadiah=hadiah,
+                    miles_digunakan=hadiah.miles,
+                    catatan=catatan,
+                )
+                if member_profile:
+                    member_profile.award_miles -= hadiah.miles
+                    member_profile.save()
+                MilesTransaction.objects.create(
+                    member=request.user,
+                    deskripsi=f"Redeem hadiah: {hadiah.nama} ({redeem.redeem_id})",
+                    miles_delta=-hadiah.miles,
+                )
+            messages.success(request, f"Redeem {hadiah.nama} berhasil! ID: {redeem.redeem_id}")
+            return redirect("member_redeem")
+
+    return render(request, "core/redeem_hadiah.html", {
+        "form": form,
+        "redeem_list": redeem_list,
+        "award_miles": award_miles,
+    })
+
+
+# ──────────────────────────────────────────────
+# PEMBELIAN AWARD MILES PACKAGE – MEMBER (CR)
+# ──────────────────────────────────────────────
+
+@login_required
+def member_package_view(request):
+    if request.user.role != User.Role.MEMBER:
+        messages.error(request, "Halaman ini khusus member.")
+        return redirect("dashboard")
+
+    packages = AwardMilesPackage.objects.filter(is_active=True)
+    pembelian_list = PembelianPackage.objects.filter(member=request.user).select_related("package")
+    member_profile = getattr(request.user, "member_profile", None)
+
+    if request.method == "POST":
+        kode_package = request.POST.get("kode_package")
+        package = get_object_or_404(AwardMilesPackage, kode_package=kode_package, is_active=True)
+        with transaction.atomic():
+            pembelian = PembelianPackage.objects.create(
+                member=request.user,
+                package=package,
+                harga_dibayar=package.harga_idr,
+                miles_diterima=package.miles,
+            )
+            if member_profile:
+                member_profile.award_miles += package.miles
+                member_profile.total_miles += package.miles
+                member_profile.save()
+            MilesTransaction.objects.create(
+                member=request.user,
+                deskripsi=f"Beli package: {package.nama}",
+                miles_delta=package.miles,
+            )
+        messages.success(request, f"Pembelian {package.nama} berhasil! +{package.miles:,} miles.")
+        return redirect("member_package")
+
+    return render(request, "core/beli_package.html", {
+        "packages": packages,
+        "pembelian_list": pembelian_list,
+        "member_profile": member_profile,
+    })
+
+
+# ──────────────────────────────────────────────
+# INFO TIER & KEUNTUNGAN – MEMBER (R)
+# ──────────────────────────────────────────────
+
+TIER_INFO = [
+    {
+        "nama": "Blue",
+        "warna": "bg-blue-100 text-blue-800 border-blue-200",
+        "warna_badge": "bg-blue-500",
+        "min_miles": 0,
+        "max_miles": 24999,
+        "keuntungan": [
+            "Akses dasar ke program AeroMiles",
+            "Redeem hadiah dari mitra pilihan",
+            "Pembelian Award Miles Package",
+            "Transfer miles ke sesama member",
+            "Klaim missing miles penerbangan",
+        ],
+        "bonus_miles": "0%",
+        "priority_checkin": False,
+        "lounge_access": False,
+        "upgrade_priority": False,
+    },
+    {
+        "nama": "Silver",
+        "warna": "bg-gray-100 text-gray-700 border-gray-300",
+        "warna_badge": "bg-gray-400",
+        "min_miles": 25000,
+        "max_miles": 49999,
+        "keuntungan": [
+            "Semua keuntungan tier Blue",
+            "Bonus miles 25% setiap penerbangan",
+            "Priority check-in di bandara",
+            "Akses lounge bandara domestik",
+            "Diskon 10% pembelian Award Miles Package",
+        ],
+        "bonus_miles": "25%",
+        "priority_checkin": True,
+        "lounge_access": "Domestik",
+        "upgrade_priority": False,
+    },
+    {
+        "nama": "Gold",
+        "warna": "bg-yellow-100 text-yellow-800 border-yellow-200",
+        "warna_badge": "bg-yellow-500",
+        "min_miles": 50000,
+        "max_miles": 99999,
+        "keuntungan": [
+            "Semua keuntungan tier Silver",
+            "Bonus miles 50% setiap penerbangan",
+            "Priority check-in & boarding",
+            "Akses lounge domestik & internasional",
+            "Diskon 20% pembelian Award Miles Package",
+            "Upgrade kabin gratis (subject to availability)",
+        ],
+        "bonus_miles": "50%",
+        "priority_checkin": True,
+        "lounge_access": "Domestik & Internasional",
+        "upgrade_priority": False,
+    },
+    {
+        "nama": "Platinum",
+        "warna": "bg-purple-100 text-purple-800 border-purple-200",
+        "warna_badge": "bg-purple-600",
+        "min_miles": 100000,
+        "max_miles": None,
+        "keuntungan": [
+            "Semua keuntungan tier Gold",
+            "Bonus miles 100% setiap penerbangan",
+            "Dedicated customer service 24/7",
+            "Akses lounge semua bandara partner",
+            "Diskon 30% pembelian Award Miles Package",
+            "Priority upgrade kabin otomatis",
+            "Complimentary baggage tambahan 10kg",
+        ],
+        "bonus_miles": "100%",
+        "priority_checkin": True,
+        "lounge_access": "Semua Bandara Partner",
+        "upgrade_priority": True,
+    },
+]
+
+
+@login_required
+def member_tier_view(request):
+    if request.user.role != User.Role.MEMBER:
+        messages.error(request, "Halaman ini khusus member.")
+        return redirect("dashboard")
+
+    member_profile = getattr(request.user, "member_profile", None)
+    current_tier = member_profile.tier if member_profile else "Blue"
+    total_miles = member_profile.total_miles if member_profile else 0
+
+    current_tier_info = next((t for t in TIER_INFO if t["nama"] == current_tier), TIER_INFO[0])
+    next_tier_info = None
+    miles_to_next = None
+    if current_tier != "Platinum":
+        idx = next((i for i, t in enumerate(TIER_INFO) if t["nama"] == current_tier), 0)
+        if idx < len(TIER_INFO) - 1:
+            next_tier_info = TIER_INFO[idx + 1]
+            miles_to_next = next_tier_info["min_miles"] - total_miles
+
+    return render(request, "core/info_tier.html", {
+        "tier_list": TIER_INFO,
+        "current_tier": current_tier,
+        "current_tier_info": current_tier_info,
+        "next_tier_info": next_tier_info,
+        "miles_to_next": miles_to_next,
+        "total_miles": total_miles,
+        "member_profile": member_profile,
+    })
+
+
+# ──────────────────────────────────────────────
+# LAPORAN & RIWAYAT TRANSAKSI MILES – STAF (RD)
+# ──────────────────────────────────────────────
+
+@login_required
+def staf_laporan_transaksi_view(request):
+    if not _staff_only(request):
+        return redirect("dashboard")
+
+    # Filter params
+    search = request.GET.get("search", "").strip()
+    tipe = request.GET.get("tipe", "")
+    date_from = request.GET.get("date_from", "")
+    date_to = request.GET.get("date_to", "")
+
+    qs = MilesTransaction.objects.select_related("member").order_by("-created_at")
+
+    if search:
+        qs = qs.filter(
+            Q(member__email__icontains=search) |
+            Q(member__first_mid_name__icontains=search) |
+            Q(deskripsi__icontains=search)
+        )
+    if tipe == "kredit":
+        qs = qs.filter(miles_delta__gt=0)
+    elif tipe == "debit":
+        qs = qs.filter(miles_delta__lt=0)
+
+    if date_from:
+        try:
+            from datetime import datetime
+            qs = qs.filter(created_at__date__gte=datetime.strptime(date_from, "%Y-%m-%d").date())
+        except ValueError:
+            pass
+    if date_to:
+        try:
+            from datetime import datetime
+            qs = qs.filter(created_at__date__lte=datetime.strptime(date_to, "%Y-%m-%d").date())
+        except ValueError:
+            pass
+
+    # Delete single transaction
+    if request.method == "POST" and request.POST.get("action") == "delete":
+        trx_id = request.POST.get("trx_id")
+        trx = get_object_or_404(MilesTransaction, pk=trx_id)
+        trx.delete()
+        messages.success(request, f"Transaksi #{trx_id} berhasil dihapus.")
+        return redirect("staf_laporan_transaksi")
+
+    total_kredit = qs.aggregate(total=Coalesce(Sum("miles_delta", filter=Q(miles_delta__gt=0)), 0))["total"]
+    total_debit = qs.aggregate(total=Coalesce(Sum("miles_delta", filter=Q(miles_delta__lt=0)), 0))["total"]
+
+    return render(request, "core/laporan_transaksi.html", {
+        "transaksi_list": qs,
+        "search": search,
+        "tipe": tipe,
+        "date_from": date_from,
+        "date_to": date_to,
+        "total_kredit": total_kredit,
+        "total_debit": total_debit,
+        "total_transaksi": qs.count(),
+    })

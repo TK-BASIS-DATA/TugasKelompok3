@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.forms import PasswordChangeForm
 from django.utils import timezone
 
-from .models import Hadiah, MASKAPAI_CHOICES, Mitra, Penyedia, StaffProfile, User
+from .models import AwardMilesPackage, Hadiah, MASKAPAI_CHOICES, Mitra, Penyedia, RedeemHadiah, StaffProfile, User, Identitas, BENTUK_IDENTITAS_CHOICES
 
 
 def _apply_input_classes(fields):
@@ -212,6 +212,38 @@ class MitraForm(forms.ModelForm):
         return tanggal_kerja_sama
 
 
+class RedeemHadiahForm(forms.Form):
+    hadiah = forms.ModelChoiceField(
+        queryset=Hadiah.objects.none(),
+        label="Pilih Hadiah",
+        empty_label="-- Pilih hadiah --",
+    )
+    catatan = forms.CharField(
+        label="Catatan (opsional)", required=False, widget=forms.Textarea(attrs={"rows": 2})
+    )
+
+    def __init__(self, member, *args, **kwargs):
+        self.member = member
+        super().__init__(*args, **kwargs)
+        today = timezone.localdate()
+        self.fields["hadiah"].queryset = Hadiah.objects.filter(
+            valid_start_date__lte=today, program_end__gte=today
+        ).order_by("nama")
+        _apply_input_classes(self.fields)
+
+    def clean_hadiah(self):
+        hadiah = self.cleaned_data["hadiah"]
+        try:
+            profile = self.member.member_profile
+        except Exception:
+            raise forms.ValidationError("Profil member tidak ditemukan.")
+        if profile.award_miles < hadiah.miles:
+            raise forms.ValidationError(
+                f"Award miles tidak mencukupi. Diperlukan: {hadiah.miles} miles, tersedia: {profile.award_miles} miles."
+            )
+        return hadiah
+
+
 class HadiahFilterForm(forms.Form):
     penyedia = forms.ModelChoiceField(
         queryset=Penyedia.objects.none(),
@@ -233,9 +265,7 @@ class HadiahFilterForm(forms.Form):
         self.fields["penyedia"].queryset = Penyedia.objects.order_by("jenis", "nama")
         _apply_input_classes(self.fields)
 
-from .models import Hadiah, MASKAPAI_CHOICES, Mitra, Penyedia, StaffProfile, User, Identitas, BENTUK_IDENTITAS_CHOICES
 
-# Form untuk Identitas Member
 class IdentitasForm(forms.ModelForm):
     class Meta:
         model = Identitas

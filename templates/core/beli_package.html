@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 py-8 animate-rise">
+
+  <h1 class="text-2xl font-display font-bold text-aero-ink mb-1">Beli Award Miles Package</h1>
+  <p class="text-sm text-gray-500 mb-8">Award Miles saat ini: <span class="font-bold text-aero-steel">{{ member_profile.award_miles|default:0|floatformat:"0" }}</span></p>
+
+  <!-- Daftar Package -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
+    {% for pkg in packages %}
+    <div class="bg-white rounded-2xl border border-aero-cloud shadow-sm p-5 flex flex-col">
+      <div class="flex items-center gap-2 mb-2">
+        <span class="text-2xl">✈️</span>
+        <span class="font-display font-bold text-aero-ink text-lg">{{ pkg.nama }}</span>
+      </div>
+      <p class="text-xs text-gray-500 mb-3">{{ pkg.deskripsi }}</p>
+      <div class="mt-auto">
+        <div class="flex items-end justify-between mb-4">
+          <div>
+            <div class="text-2xl font-bold text-aero-steel">{{ pkg.miles|floatformat:"0" }} <span class="text-sm font-normal text-gray-400">miles</span></div>
+            <div class="text-sm text-gray-500">Rp{{ pkg.harga_idr|floatformat:"0" }}</div>
+          </div>
+        </div>
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="kode_package" value="{{ pkg.kode_package }}">
+          <button type="submit"
+            class="w-full bg-aero-steel text-white py-2 rounded-xl text-sm font-semibold hover:bg-aero-ink transition"
+            onclick="return confirm('Konfirmasi beli {{ pkg.nama }} seharga Rp{{ pkg.harga_idr|floatformat:'0' }}?')">
+            Beli Sekarang
+          </button>
+        </form>
+      </div>
+    </div>
+    {% empty %}
+    <div class="col-span-3 text-center text-gray-400 py-12">Belum ada package tersedia.</div>
+    {% endfor %}
+  </div>
+
+  <!-- Riwayat Pembelian -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+    <div class="px-5 py-4 border-b border-gray-100">
+      <h2 class="font-semibold text-aero-ink">Riwayat Pembelian</h2>
+    </div>
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 text-gray-600">
+        <tr>
+          <th class="px-4 py-3 text-left">Waktu</th>
+          <th class="px-4 py-3 text-left">Package</th>
+          <th class="px-4 py-3 text-right">Miles Diterima</th>
+          <th class="px-4 py-3 text-right">Harga Dibayar</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for p in pembelian_list %}
+        <tr class="hover:bg-gray-50">
+          <td class="px-4 py-3 text-gray-500 text-xs">{{ p.timestamp|date:"Y-m-d H:i" }}</td>
+          <td class="px-4 py-3 font-semibold">{{ p.package.nama }}</td>
+          <td class="px-4 py-3 text-right font-semibold text-green-600">+{{ p.miles_diterima|floatformat:"0" }}</td>
+          <td class="px-4 py-3 text-right text-gray-600">Rp{{ p.harga_dibayar|floatformat:"0" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="px-4 py-8 text-center text-gray-400">Belum ada riwayat pembelian.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
