@@ -6,14 +6,12 @@ from django.db.models import Q, Sum
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
-from .models import Identitas
-from .forms import IdentitasForm
-
 from .forms import (
     ClaimMissingMilesForm,
     CustomPasswordChangeForm,
     HadiahFilterForm,
     HadiahForm,
+    IdentitasForm,
     LoginForm,
     MemberRegistrationForm,
     MitraForm,
@@ -23,7 +21,7 @@ from .forms import (
     StaffRegistrationForm,
     TransferForm,
 )
-from .models import BANDARA_CHOICES, AwardMilesPackage, ClaimMissingMiles, Hadiah, MemberProfile, MilesTransaction, Mitra, PembelianPackage, Penyedia, RedeemHadiah, StaffProfile, Transfer, User
+from .models import BANDARA_CHOICES, AwardMilesPackage, ClaimMissingMiles, Hadiah, Identitas, MemberProfile, MilesTransaction, Mitra, PembelianPackage, Penyedia, RedeemHadiah, StaffProfile, Transfer, User
 
 def _next_member_number():
     last_member = MemberProfile.objects.order_by("-nomor_member").first()
@@ -305,9 +303,6 @@ def member_list_view(request):
         "tier_filter": tier_filter,
         "tiers": tiers,
     })
-
-
-from .forms import ProfileUpdateForm
 
 @login_required
 @transaction.atomic
