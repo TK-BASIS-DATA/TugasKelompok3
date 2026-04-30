@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-8 animate-rise">
+
+  <div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-display font-bold text-aero-ink">Klaim Missing Miles</h1>
+    <button onclick="document.getElementById('modalAjukan').classList.remove('hidden')"
+      class="bg-aero-steel text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-aero-ink transition">
+      + Ajukan Klaim
+    </button>
+  </div>
+
+  {% if messages %}
+    {% for msg in messages %}
+      <div class="mb-4 px-4 py-3 rounded-lg text-sm font-medium
+        {% if msg.tags == 'success' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+        {{ msg }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Filter Status -->
+  <div class="flex gap-2 mb-5">
+    {% for s in status_choices %}
+      <a href="?status={{ s }}"
+        class="px-4 py-1.5 rounded-full text-sm font-semibold border transition
+          {% if status_filter == s %}bg-aero-steel text-white border-aero-steel{% else %}bg-white text-aero-ink border-gray-200 hover:bg-aero-cloud{% endif %}">
+        {{ s }}
+      </a>
+    {% endfor %}
+  </div>
+
+  <!-- Tabel Klaim -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-aero-ink text-white">
+        <tr>
+          <th class="px-4 py-3 text-left">No. Klaim</th>
+          <th class="px-4 py-3 text-left">Maskapai</th>
+          <th class="px-4 py-3 text-left">Rute</th>
+          <th class="px-4 py-3 text-left">Tanggal</th>
+          <th class="px-4 py-3 text-left">Flight</th>
+          <th class="px-4 py-3 text-left">Kelas</th>
+          <th class="px-4 py-3 text-left">Status</th>
+          <th class="px-4 py-3 text-left">Pengajuan</th>
+          <th class="px-4 py-3 text-left">Aksi</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for c in claims %}
+        <tr class="hover:bg-gray-50">
+          <td class="px-4 py-3 font-mono font-semibold text-aero-steel">{{ c.claim_id }}</td>
+          <td class="px-4 py-3">{{ c.maskapai }}</td>
+          <td class="px-4 py-3">{{ c.bandara_asal }} → {{ c.bandara_tujuan }}</td>
+          <td class="px-4 py-3">{{ c.tanggal_penerbangan }}</td>
+          <td class="px-4 py-3">{{ c.flight_number }}</td>
+          <td class="px-4 py-3">{{ c.kelas_kabin }}</td>
+          <td class="px-4 py-3">
+            {% if c.status_penerimaan == "Disetujui" %}
+              <span class="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs font-semibold">Disetujui</span>
+            {% elif c.status_penerimaan == "Menunggu" %}
+              <span class="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full text-xs font-semibold">Menunggu</span>
+            {% else %}
+              <span class="bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-xs font-semibold">Ditolak</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3 text-gray-500">{{ c.timestamp|date:"Y-m-d H:i" }}</td>
+          <td class="px-4 py-3">
+            {% if c.status_penerimaan == "Menunggu" %}
+              <button onclick='openEditModal({{ c.pk }}, "{{ c.maskapai }}", "{{ c.bandara_asal }}", "{{ c.bandara_tujuan }}", "{{ c.tanggal_penerbangan|date:"Y-m-d" }}", "{{ c.flight_number }}", "{{ c.nomor_tiket }}", "{{ c.kelas_kabin }}", "{{ c.pnr }}")'
+                class="text-aero-steel hover:text-aero-ink mr-2">✏️</button>
+              <button onclick="openBatalkanModal({{ c.pk }})"
+                class="text-red-500 hover:text-red-700">🗑</button>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="9" class="px-4 py-8 text-center text-gray-400">Belum ada klaim.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal Ajukan Klaim -->
+<div id="modalAjukan" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 relative">
+    <button onclick="document.getElementById('modalAjukan').classList.add('hidden')"
+      class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl">✕</button>
+    <h2 class="text-lg font-bold text-aero-ink mb-4">Ajukan Klaim Baru</h2>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="ajukan">
+      <div class="grid grid-cols-2 gap-3">
+        {% for field in form %}
+          <div class="{% if forloop.last %}col-span-2{% endif %}">
+            <label class="block text-xs font-semibold text-gray-600 mb-1">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}<p class="text-red-500 text-xs mt-1">{{ field.errors.0 }}</p>{% endif %}
+          </div>
+        {% endfor %}
+      </div>
+      <button type="submit" class="mt-4 w-full bg-aero-steel text-white py-2 rounded-lg font-semibold hover:bg-aero-ink transition">
+        Ajukan
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Edit Klaim -->
+<div id="modalEdit" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 relative">
+    <button onclick="document.getElementById('modalEdit').classList.add('hidden')"
+      class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl">✕</button>
+    <h2 class="text-lg font-bold text-aero-ink mb-4">Edit Klaim</h2>
+    <form method="post" id="formEdit">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="edit">
+      <input type="hidden" name="claim_id" id="editClaimId">
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">Maskapai</label>
+          <select name="maskapai" id="editMaskapai" class="w-full border rounded-lg px-3 py-2 text-sm">
+            {% for k,v in form.fields.maskapai.choices %}
+              <option value="{{ k }}">{{ v }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">Kelas Kabin</label>
+          <select name="kelas_kabin" id="editKelas" class="w-full border rounded-lg px-3 py-2 text-sm">
+            <option value="Economy">Economy</option>
+            <option value="Business">Business</option>
+            <option value="First">First</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">Bandara Asal</label>
+          <select name="bandara_asal" id="editAsalBandara" class="w-full border rounded-lg px-3 py-2 text-sm">
+            {% for k,v in form.fields.bandara_asal.choices %}
+              <option value="{{ k }}">{{ v }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">Bandara Tujuan</label>
+          <select name="bandara_tujuan" id="editTujuanBandara" class="w-full border rounded-lg px-3 py-2 text-sm">
+            {% for k,v in form.fields.bandara_tujuan.choices %}
+              <option value="{{ k }}">{{ v }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">Tanggal Penerbangan</label>
+          <input type="date" name="tanggal_penerbangan" id="editTanggal" class="w-full border rounded-lg px-3 py-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">Flight Number</label>
+          <input type="text" name="flight_number" id="editFlight" class="w-full border rounded-lg px-3 py-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">Nomor Tiket</label>
+          <input type="text" name="nomor_tiket" id="editNomorTiket" class="w-full border rounded-lg px-3 py-2 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">PNR</label>
+          <input type="text" name="pnr" id="editPnr" class="w-full border rounded-lg px-3 py-2 text-sm">
+        </div>
+      </div>
+      <button type="submit" class="mt-4 w-full bg-aero-steel text-white py-2 rounded-lg font-semibold hover:bg-aero-ink transition">
+        Simpan
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Batalkan Klaim -->
+<div id="modalBatalkan" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 relative text-center">
+    <h2 class="text-lg font-bold text-aero-ink mb-2">Batalkan Klaim?</h2>
+    <p class="text-sm text-gray-500 mb-5">Klaim akan dihapus secara permanen.</p>
+    <form method="post" id="formBatalkan">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="batalkan">
+      <input type="hidden" name="claim_id" id="batalkanClaimId">
+      <div class="flex gap-3 justify-center">
+        <button type="button" onclick="document.getElementById('modalBatalkan').classList.add('hidden')"
+          class="px-5 py-2 rounded-lg border font-semibold text-gray-600 hover:bg-gray-100">Batal</button>
+        <button type="submit" class="px-5 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700">Hapus</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openEditModal(id, maskapai, asal, tujuan, tanggal, flight, tiket, kelas, pnr) {
+  document.getElementById('editClaimId').value = id;
+  document.getElementById('editMaskapai').value = maskapai;
+  document.getElementById('editAsalBandara').value = asal;
+  document.getElementById('editTujuanBandara').value = tujuan;
+  document.getElementById('editTanggal').value = tanggal;
+  document.getElementById('editFlight').value = flight;
+  document.getElementById('editNomorTiket').value = tiket;
+  document.getElementById('editKelas').value = kelas;
+  document.getElementById('editPnr').value = pnr;
+  document.getElementById('modalEdit').classList.remove('hidden');
+}
+function openBatalkanModal(id) {
+  document.getElementById('batalkanClaimId').value = id;
+  document.getElementById('modalBatalkan').classList.remove('hidden');
+}
+// Style form fields dari Django
+document.querySelectorAll('#modalAjukan select, #modalAjukan input, #modalEdit select, #modalEdit input').forEach(el => {
+  el.classList.add('w-full', 'border', 'border-gray-300', 'rounded-lg', 'px-3', 'py-2', 'text-sm', 'focus:outline-none', 'focus:ring-2', 'focus:ring-aero-steel');
+});
+</script>
+{% endblock %}

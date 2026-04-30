@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 py-8 animate-rise">
+
+  <h1 class="text-2xl font-display font-bold text-aero-ink mb-6">Kelola Klaim Missing Miles</h1>
+
+  {% if messages %}
+    {% for msg in messages %}
+      <div class="mb-4 px-4 py-3 rounded-lg text-sm font-medium
+        {% if msg.tags == 'success' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+        {{ msg }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Filter -->
+  <form method="get" class="flex flex-wrap gap-3 mb-5 items-end">
+    <div>
+      <label class="block text-xs font-semibold text-gray-500 mb-1">Status</label>
+      <select name="status" class="border rounded-lg px-3 py-2 text-sm">
+        <option value="Semua" {% if status_filter == "Semua" %}selected{% endif %}>Semua Status</option>
+        <option value="Menunggu" {% if status_filter == "Menunggu" %}selected{% endif %}>Menunggu</option>
+        <option value="Disetujui" {% if status_filter == "Disetujui" %}selected{% endif %}>Disetujui</option>
+        <option value="Ditolak" {% if status_filter == "Ditolak" %}selected{% endif %}>Ditolak</option>
+      </select>
+    </div>
+    <div>
+      <label class="block text-xs font-semibold text-gray-500 mb-1">Maskapai</label>
+      <select name="maskapai" class="border rounded-lg px-3 py-2 text-sm">
+        <option value="">Semua Maskapai</option>
+        {% for k,v in maskapai_list %}
+          <option value="{{ k }}" {% if maskapai_filter == k %}selected{% endif %}>{{ v }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="px-4 py-2 bg-aero-steel text-white rounded-lg text-sm font-semibold hover:bg-aero-ink transition">
+      Filter
+    </button>
+  </form>
+
+  <!-- Tabel -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-aero-ink text-white">
+        <tr>
+          <th class="px-4 py-3 text-left">No. Klaim</th>
+          <th class="px-4 py-3 text-left">Member</th>
+          <th class="px-4 py-3 text-left">Maskapai</th>
+          <th class="px-4 py-3 text-left">Rute</th>
+          <th class="px-4 py-3 text-left">Tanggal</th>
+          <th class="px-4 py-3 text-left">Flight</th>
+          <th class="px-4 py-3 text-left">Kelas</th>
+          <th class="px-4 py-3 text-left">Pengajuan</th>
+          <th class="px-4 py-3 text-left">Status</th>
+          <th class="px-4 py-3 text-left">Aksi</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for c in claims %}
+        <tr class="hover:bg-gray-50">
+          <td class="px-4 py-3 font-mono font-semibold text-aero-steel">{{ c.claim_id }}</td>
+          <td class="px-4 py-3">
+            <div class="font-semibold">{{ c.email_member.full_name }}</div>
+            <div class="text-xs text-gray-400">{{ c.email_member.email }}</div>
+          </td>
+          <td class="px-4 py-3">{{ c.maskapai }}</td>
+          <td class="px-4 py-3">{{ c.bandara_asal }} → {{ c.bandara_tujuan }}</td>
+          <td class="px-4 py-3">{{ c.tanggal_penerbangan }}</td>
+          <td class="px-4 py-3">{{ c.flight_number }}</td>
+          <td class="px-4 py-3">{{ c.kelas_kabin }}</td>
+          <td class="px-4 py-3 text-gray-500">{{ c.timestamp|date:"Y-m-d H:i" }}</td>
+          <td class="px-4 py-3">
+            {% if c.status_penerimaan == "Disetujui" %}
+              <span class="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs font-semibold">Disetujui</span>
+            {% elif c.status_penerimaan == "Menunggu" %}
+              <span class="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full text-xs font-semibold">Menunggu</span>
+            {% else %}
+              <span class="bg-red-100 text-red-700 px-2 py-0.5 rounded-full text-xs font-semibold">Ditolak</span>
+            {% endif %}
+          </td>
+          <td class="px-4 py-3">
+            {% if c.status_penerimaan == "Menunggu" %}
+              <button onclick='openSetujuiModal({{ c.pk }}, "{{ c.claim_id }}", "{{ c.email_member.full_name }}", "{{ c.bandara_asal }} → {{ c.bandara_tujuan }}", "{{ c.kelas_kabin }}")'
+                class="text-green-600 hover:text-green-800 mr-2 text-lg" title="Setujui">✔</button>
+              <button onclick='openTolakModal({{ c.pk }}, "{{ c.claim_id }}", "{{ c.email_member.full_name }}", "{{ c.bandara_asal }} → {{ c.bandara_tujuan }}", "{{ c.kelas_kabin }}")'
+                class="text-red-500 hover:text-red-700 text-lg" title="Tolak">✘</button>
+            {% else %}
+              <span class="text-gray-300 text-xs">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="10" class="px-4 py-8 text-center text-gray-400">Tidak ada klaim ditemukan.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal Setujui -->
+<div id="modalSetujui" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 text-center">
+    <div class="text-4xl mb-3">✅</div>
+    <h2 class="text-lg font-bold text-aero-ink mb-1">Setujui Klaim</h2>
+    <p class="text-sm text-gray-500 mb-1">Miles akan ditambahkan ke akun member sesuai rute dan kelas kabin.</p>
+    <div id="detailSetujui" class="text-sm bg-aero-cloud rounded-lg p-3 mb-5 text-left"></div>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="setujui">
+      <input type="hidden" name="claim_id" id="setujuiClaimId">
+      <div class="flex gap-3 justify-center">
+        <button type="button" onclick="document.getElementById('modalSetujui').classList.add('hidden')"
+          class="px-5 py-2 rounded-lg border font-semibold text-gray-600 hover:bg-gray-100">Batal</button>
+        <button type="submit" class="px-5 py-2 rounded-lg bg-green-600 text-white font-semibold hover:bg-green-700">Setujui</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal Tolak -->
+<div id="modalTolak" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 text-center">
+    <div class="text-4xl mb-3">❌</div>
+    <h2 class="text-lg font-bold text-aero-ink mb-1">Tolak Klaim</h2>
+    <p class="text-sm text-gray-500 mb-1">Klaim akan ditolak dan member akan diinformasikan.</p>
+    <div id="detailTolak" class="text-sm bg-red-50 rounded-lg p-3 mb-5 text-left"></div>
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="tolak">
+      <input type="hidden" name="claim_id" id="tolakClaimId">
+      <div class="flex gap-3 justify-center">
+        <button type="button" onclick="document.getElementById('modalTolak').classList.add('hidden')"
+          class="px-5 py-2 rounded-lg border font-semibold text-gray-600 hover:bg-gray-100">Batal</button>
+        <button type="submit" class="px-5 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700">Tolak</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openSetujuiModal(id, klaim, member, rute, kelas) {
+  document.getElementById('setujuiClaimId').value = id;
+  document.getElementById('detailSetujui').innerHTML =
+    `<b>Klaim:</b> ${klaim}<br><b>Member:</b> ${member}<br><b>Rute:</b> ${rute}<br><b>Kelas:</b> ${kelas}`;
+  document.getElementById('modalSetujui').classList.remove('hidden');
+}
+function openTolakModal(id, klaim, member, rute, kelas) {
+  document.getElementById('tolakClaimId').value = id;
+  document.getElementById('detailTolak').innerHTML =
+    `<b>Klaim:</b> ${klaim}<br><b>Member:</b> ${member}<br><b>Rute:</b> ${rute}<br><b>Kelas:</b> ${kelas}`;
+  document.getElementById('modalTolak').classList.remove('hidden');
+}
+</script>
+{% endblock %}

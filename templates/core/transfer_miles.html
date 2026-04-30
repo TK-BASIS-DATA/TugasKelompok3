@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8 animate-rise">
+
+  <div class="flex items-center justify-between mb-2">
+    <h1 class="text-2xl font-display font-bold text-aero-ink">Transfer Miles</h1>
+    <button onclick="document.getElementById('modalTransfer').classList.remove('hidden')"
+      class="bg-aero-steel text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-aero-ink transition">
+      + Transfer Baru
+    </button>
+  </div>
+  <p class="text-sm text-gray-500 mb-6">Award Miles tersedia: <span class="font-bold text-aero-steel">{{ award_miles|floatformat:"0" }}</span></p>
+
+  {% if messages %}
+    {% for msg in messages %}
+      <div class="mb-4 px-4 py-3 rounded-lg text-sm font-medium
+        {% if msg.tags == 'success' %}bg-green-100 text-green-800{% else %}bg-red-100 text-red-800{% endif %}">
+        {{ msg }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Tabel Riwayat -->
+  <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-x-auto">
+    <div class="px-5 py-4 border-b border-gray-100">
+      <h2 class="font-semibold text-aero-ink">Riwayat Transfer</h2>
+    </div>
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 text-gray-600">
+        <tr>
+          <th class="px-4 py-3 text-left">Waktu</th>
+          <th class="px-4 py-3 text-left">Member</th>
+          <th class="px-4 py-3 text-right">Jumlah Miles</th>
+          <th class="px-4 py-3 text-left">Catatan</th>
+          <th class="px-4 py-3 text-left">Tipe</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for t in transfers_sent %}
+        <tr class="hover:bg-gray-50">
+          <td class="px-4 py-3 text-gray-500">{{ t.timestamp|date:"Y-m-d H:i" }}</td>
+          <td class="px-4 py-3">
+            <div class="font-semibold">{{ t.email_member_2.full_name }}</div>
+            <div class="text-xs text-gray-400">{{ t.email_member_2.email }}</div>
+          </td>
+          <td class="px-4 py-3 text-right font-semibold text-red-600">-{{ t.jumlah }}</td>
+          <td class="px-4 py-3 text-gray-500">{{ t.catatan|default:"—" }}</td>
+          <td class="px-4 py-3">
+            <span class="bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full text-xs font-semibold">Kirim</span>
+          </td>
+        </tr>
+        {% endfor %}
+        {% for t in transfers_received %}
+        <tr class="hover:bg-gray-50">
+          <td class="px-4 py-3 text-gray-500">{{ t.timestamp|date:"Y-m-d H:i" }}</td>
+          <td class="px-4 py-3">
+            <div class="font-semibold">{{ t.email_member_1.full_name }}</div>
+            <div class="text-xs text-gray-400">{{ t.email_member_1.email }}</div>
+          </td>
+          <td class="px-4 py-3 text-right font-semibold text-green-600">+{{ t.jumlah }}</td>
+          <td class="px-4 py-3 text-gray-500">{{ t.catatan|default:"—" }}</td>
+          <td class="px-4 py-3">
+            <span class="bg-green-100 text-green-700 px-2 py-0.5 rounded-full text-xs font-semibold">Terima</span>
+          </td>
+        </tr>
+        {% endfor %}
+        {% if not transfers_sent and not transfers_received %}
+        <tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">Belum ada riwayat transfer.</td></tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Modal Transfer -->
+<div id="modalTransfer" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative">
+    <button onclick="document.getElementById('modalTransfer').classList.add('hidden')"
+      class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl">✕</button>
+    <h2 class="text-lg font-bold text-aero-ink mb-1">Transfer Miles</h2>
+    <p class="text-xs text-gray-400 mb-4">Award Miles tersedia: <b>{{ award_miles }}</b></p>
+
+    {% if form.non_field_errors %}
+      <div class="mb-3 px-3 py-2 rounded-lg bg-red-50 text-red-700 text-sm">
+        {% for e in form.non_field_errors %}{{ e }}{% endfor %}
+      </div>
+    {% endif %}
+
+    <form method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="transfer">
+      <div class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">Email Penerima</label>
+          <input type="email" name="email_penerima"
+            value="{{ form.email_penerima.value|default:'' }}"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-aero-steel"
+            placeholder="email@example.com">
+          {% if form.email_penerima.errors %}
+            <p class="text-red-500 text-xs mt-1">{{ form.email_penerima.errors.0 }}</p>
+          {% endif %}
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">Jumlah Miles</label>
+          <input type="number" name="jumlah" min="1"
+            value="{{ form.jumlah.value|default:'' }}"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-aero-steel"
+            placeholder="Contoh: 1000">
+          {% if form.jumlah.errors %}
+            <p class="text-red-500 text-xs mt-1">{{ form.jumlah.errors.0 }}</p>
+          {% endif %}
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1">Catatan (opsional)</label>
+          <textarea name="catatan" rows="2"
+            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-aero-steel"
+            placeholder="Catatan transfer...">{{ form.catatan.value|default:'' }}</textarea>
+        </div>
+      </div>
+      <button type="submit" class="mt-5 w-full bg-aero-steel text-white py-2 rounded-lg font-semibold hover:bg-aero-ink transition">
+        Transfer
+      </button>
+    </form>
+  </div>
+</div>
+
+<script>
+// Buka modal otomatis jika ada error form
+{% if form.errors %}
+document.getElementById('modalTransfer').classList.remove('hidden');
+{% endif %}
+</script>
+{% endblock %}

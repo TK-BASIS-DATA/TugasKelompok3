@@ -109,6 +109,57 @@ class CustomPasswordChangeForm(PasswordChangeForm):
     new_password2 = forms.CharField(label="Konfirmasi Password Baru", widget=forms.PasswordInput)
 
 
+class ClaimMissingMilesForm(forms.ModelForm):
+    class Meta:
+        from .models import ClaimMissingMiles, BANDARA_CHOICES, MASKAPAI_CHOICES, KELAS_KABIN_CHOICES
+        model = ClaimMissingMiles
+        fields = [
+            "maskapai",
+            "bandara_asal",
+            "bandara_tujuan",
+            "tanggal_penerbangan",
+            "flight_number",
+            "nomor_tiket",
+            "kelas_kabin",
+            "pnr",
+        ]
+        widgets = {
+            "tanggal_penerbangan": forms.DateInput(attrs={"type": "date"}),
+        }
+
+
+class TransferForm(forms.Form):
+    email_penerima = forms.EmailField(label="Email Member Penerima")
+    jumlah = forms.IntegerField(label="Jumlah Miles", min_value=1)
+    catatan = forms.CharField(
+        label="Catatan (opsional)", required=False, widget=forms.Textarea(attrs={"rows": 3})
+    )
+
+    def __init__(self, pengirim, *args, **kwargs):
+        self.pengirim = pengirim
+        super().__init__(*args, **kwargs)
+
+    def clean_email_penerima(self):
+        email = self.cleaned_data["email_penerima"].lower()
+        if email == self.pengirim.email:
+            raise forms.ValidationError("Anda tidak dapat mentransfer miles ke diri sendiri.")
+        if not User.objects.filter(email=email, role=User.Role.MEMBER).exists():
+            raise forms.ValidationError("Email tidak terdaftar sebagai member aktif.")
+        return email
+
+    def clean_jumlah(self):
+        jumlah = self.cleaned_data["jumlah"]
+        try:
+            profile = self.pengirim.member_profile
+        except Exception:
+            raise forms.ValidationError("Profil member tidak ditemukan.")
+        if jumlah > profile.award_miles:
+            raise forms.ValidationError(
+                f"Award miles tidak mencukupi. Tersedia: {profile.award_miles} miles."
+            )
+        return jumlah
+
+
 class HadiahForm(forms.ModelForm):
     class Meta:
         model = Hadiah

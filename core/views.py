@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from .forms import (
+    ClaimMissingMilesForm,
     CustomPasswordChangeForm,
     HadiahFilterForm,
     HadiahForm,
@@ -17,8 +18,9 @@ from .forms import (
     ProfileUpdateForm,
     StaffMaskapaiForm,
     StaffRegistrationForm,
+    TransferForm,
 )
-from .models import ClaimMissingMiles, Hadiah, MemberProfile, MilesTransaction, Mitra, Penyedia, StaffProfile, User
+from .models import BANDARA_CHOICES, ClaimMissingMiles, Hadiah, MemberProfile, MilesTransaction, Mitra, Penyedia, StaffProfile, Transfer, User
 
 def _next_member_number():
     last_member = MemberProfile.objects.order_by("-nomor_member").first()
@@ -265,6 +267,219 @@ def staff_page(request, title):
         return redirect("dashboard")
     return render(request, "core/placeholder.html", {"title": title})
 
+
+# ──────────────────────────────────────────────
+# CRUD CLAIM MISSING MILES – MEMBER
+# ──────────────────────────────────────────────
+
+@login_required
+def klaim_miles_view(request):
+    if request.user.role != User.Role.MEMBER:
+        messages.error(request, "Halaman ini khusus member.")
+        return redirect("dashboard")
+
+    status_filter = request.GET.get("status", "Semua")
+    claims = ClaimMissingMiles.objects.filter(email_member=request.user).order_by("-timestamp")
+    if status_filter in ["Menunggu", "Disetujui", "Ditolak"]:
+        claims = claims.filter(status_penerimaan=status_filter)
+
+    form = ClaimMissingMilesForm()
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+
+        if action == "ajukan":
+            form = ClaimMissingMilesForm(request.POST)
+            if form.is_valid():
+                klaim = form.save(commit=False)
+                klaim.email_member = request.user
+                klaim.status_penerimaan = ClaimMissingMiles.Status.MENUNGGU
+                try:
+                    klaim.save()
+                    messages.success(request, "Klaim berhasil diajukan.")
+                except Exception:
+                    messages.error(request, "Klaim duplikat untuk penerbangan yang sama.")
+                return redirect("member_klaim")
+
+        elif action == "edit":
+            claim_id = request.POST.get("claim_id")
+            klaim = ClaimMissingMiles.objects.filter(
+                pk=claim_id, email_member=request.user, status_penerimaan=ClaimMissingMiles.Status.MENUNGGU
+            ).first()
+            if not klaim:
+                messages.error(request, "Klaim tidak ditemukan atau tidak dapat diedit.")
+                return redirect("member_klaim")
+            edit_form = ClaimMissingMilesForm(request.POST, instance=klaim)
+            if edit_form.is_valid():
+                try:
+                    edit_form.save()
+                    messages.success(request, "Klaim berhasil diperbarui.")
+                except Exception:
+                    messages.error(request, "Klaim duplikat untuk penerbangan yang sama.")
+            return redirect("member_klaim")
+
+        elif action == "batalkan":
+            claim_id = request.POST.get("claim_id")
+            klaim = ClaimMissingMiles.objects.filter(
+                pk=claim_id, email_member=request.user, status_penerimaan=ClaimMissingMiles.Status.MENUNGGU
+            ).first()
+            if klaim:
+                klaim.delete()
+                messages.success(request, "Klaim berhasil dibatalkan.")
+            else:
+                messages.error(request, "Klaim tidak ditemukan atau tidak dapat dibatalkan.")
+            return redirect("member_klaim")
+
+    bandara_dict = dict(BANDARA_CHOICES)
+    maskapai_dict = dict([("M1", "Garuda Nusantara"), ("M2", "Langit Air"), ("M3", "Samudra Wings"), ("M4", "Borneo Flight"), ("M5", "Cakrawala Air")])
+
+    return render(request, "core/klaim_miles.html", {
+        "claims": claims,
+        "form": form,
+        "status_filter": status_filter,
+        "bandara_dict": bandara_dict,
+        "maskapai_dict": maskapai_dict,
+        "status_choices": ["Semua", "Menunggu", "Disetujui", "Ditolak"],
+    })
+
+
+# ──────────────────────────────────────────────
+# RU CLAIM MISSING MILES – STAF
+# ──────────────────────────────────────────────
+
+@login_required
+def kelola_klaim_view(request):
+    if request.user.role != User.Role.STAF:
+        messages.error(request, "Halaman ini khusus staf.")
+        return redirect("dashboard")
+
+    status_filter = request.GET.get("status", "Semua")
+    maskapai_filter = request.GET.get("maskapai", "")
+
+    claims = ClaimMissingMiles.objects.select_related("email_member", "email_staf").order_by("-timestamp")
+    if status_filter in ["Menunggu", "Disetujui", "Ditolak"]:
+        claims = claims.filter(status_penerimaan=status_filter)
+    if maskapai_filter:
+        claims = claims.filter(maskapai=maskapai_filter)
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+        claim_id = request.POST.get("claim_id")
+        klaim = ClaimMissingMiles.objects.filter(pk=claim_id).first()
+
+        if not klaim:
+            messages.error(request, "Klaim tidak ditemukan.")
+            return redirect("staf_kelola_klaim")
+
+        if action == "setujui" and klaim.status_penerimaan == ClaimMissingMiles.Status.MENUNGGU:
+            klaim.status_penerimaan = ClaimMissingMiles.Status.DISETUJUI
+            klaim.email_staf = request.user
+            klaim.save()
+            miles_bonus = {"Economy": 500, "Business": 1000, "First": 2000}.get(klaim.kelas_kabin, 500)
+            try:
+                profile = klaim.email_member.member_profile
+                profile.award_miles += miles_bonus
+                profile.total_miles += miles_bonus
+                profile.save()
+                MilesTransaction.objects.create(
+                    member=klaim.email_member,
+                    deskripsi=f"Klaim disetujui: {klaim.claim_id} ({klaim.flight_number})",
+                    miles_delta=miles_bonus,
+                )
+            except Exception:
+                pass
+            messages.success(request, f"Klaim {klaim.claim_id} disetujui.")
+
+        elif action == "tolak" and klaim.status_penerimaan == ClaimMissingMiles.Status.MENUNGGU:
+            klaim.status_penerimaan = ClaimMissingMiles.Status.DITOLAK
+            klaim.email_staf = request.user
+            klaim.save()
+            messages.success(request, f"Klaim {klaim.claim_id} ditolak.")
+
+        return redirect("staf_kelola_klaim")
+
+    from .models import MASKAPAI_CHOICES as MC
+
+    return render(request, "core/kelola_klaim.html", {
+        "claims": claims,
+        "status_filter": status_filter,
+        "maskapai_filter": maskapai_filter,
+        "maskapai_list": MC,
+    })
+
+
+# ──────────────────────────────────────────────
+# CR TRANSFER MILES – MEMBER
+# ──────────────────────────────────────────────
+
+@login_required
+def transfer_miles_view(request):
+    if request.user.role != User.Role.MEMBER:
+        messages.error(request, "Halaman ini khusus member.")
+        return redirect("dashboard")
+
+    transfers_sent = Transfer.objects.filter(email_member_1=request.user).select_related("email_member_2")
+    transfers_received = Transfer.objects.filter(email_member_2=request.user).select_related("email_member_1")
+
+    form = TransferForm(pengirim=request.user)
+
+    if request.method == "POST" and request.POST.get("action") == "transfer":
+        form = TransferForm(pengirim=request.user, data=request.POST)
+        if form.is_valid():
+            email_penerima = form.cleaned_data["email_penerima"]
+            jumlah = form.cleaned_data["jumlah"]
+            catatan = form.cleaned_data.get("catatan", "")
+
+            penerima = User.objects.get(email=email_penerima)
+            pengirim_profile = request.user.member_profile
+
+            Transfer.objects.create(
+                email_member_1=request.user,
+                email_member_2=penerima,
+                jumlah=jumlah,
+                catatan=catatan,
+            )
+
+            pengirim_profile.award_miles -= jumlah
+            pengirim_profile.save()
+            MilesTransaction.objects.create(
+                member=request.user,
+                deskripsi=f"Transfer ke {penerima.email}",
+                miles_delta=-jumlah,
+            )
+
+            try:
+                penerima_profile = penerima.member_profile
+                penerima_profile.award_miles += jumlah
+                penerima_profile.total_miles += jumlah
+                penerima_profile.save()
+                MilesTransaction.objects.create(
+                    member=penerima,
+                    deskripsi=f"Terima transfer dari {request.user.email}",
+                    miles_delta=jumlah,
+                )
+            except Exception:
+                pass
+
+            messages.success(request, f"Transfer {jumlah} miles ke {email_penerima} berhasil.")
+            return redirect("member_transfer")
+
+    try:
+        award_miles = request.user.member_profile.award_miles
+    except Exception:
+        award_miles = 0
+
+    return render(request, "core/transfer_miles.html", {
+        "form": form,
+        "transfers_sent": transfers_sent,
+        "transfers_received": transfers_received,
+        "award_miles": award_miles,
+    })
+
+
+# ──────────────────────────────────────────────
+# CRUD HADIAH & MITRA – STAF
+# ──────────────────────────────────────────────
 
 @login_required
 def hadiah_list_view(request):

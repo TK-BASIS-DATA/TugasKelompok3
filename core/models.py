@@ -97,6 +97,31 @@ class MilesTransaction(models.Model):
         ordering = ["-created_at"]
 
 
+BANDARA_CHOICES = [
+    ("CGK", "CGK - Soekarno-Hatta, Jakarta"),
+    ("DPS", "DPS - Ngurah Rai, Bali"),
+    ("SUB", "SUB - Juanda, Surabaya"),
+    ("KUL", "KUL - Kuala Lumpur International"),
+    ("SIN", "SIN - Changi, Singapore"),
+    ("NRT", "NRT - Narita, Tokyo"),
+    ("BKK", "BKK - Suvarnabhumi, Bangkok"),
+    ("HKG", "HKG - Hong Kong International"),
+    ("SYD", "SYD - Kingsford Smith, Sydney"),
+    ("MEL", "MEL - Melbourne Airport"),
+    ("AMS", "AMS - Schiphol, Amsterdam"),
+    ("LHR", "LHR - Heathrow, London"),
+    ("DXB", "DXB - Dubai International"),
+    ("DOH", "DOH - Hamad, Doha"),
+    ("ICN", "ICN - Incheon, Seoul"),
+]
+
+KELAS_KABIN_CHOICES = [
+    ("Economy", "Economy"),
+    ("Business", "Business"),
+    ("First", "First"),
+]
+
+
 class Penyedia(models.Model):
     class Jenis(models.TextChoices):
         MASKAPAI = "maskapai", "Maskapai"
@@ -165,5 +190,46 @@ class ClaimMissingMiles(models.Model):
         null=True,
         blank=True,
     )
+    maskapai = models.CharField(max_length=10, choices=MASKAPAI_CHOICES, default="M1")
+    bandara_asal = models.CharField(max_length=3, choices=BANDARA_CHOICES, default="CGK")
+    bandara_tujuan = models.CharField(max_length=3, choices=BANDARA_CHOICES, default="DPS")
+    tanggal_penerbangan = models.DateField(default=timezone.localdate)
+    flight_number = models.CharField(max_length=10, default="")
+    nomor_tiket = models.CharField(max_length=20, default="")
+    kelas_kabin = models.CharField(max_length=20, choices=KELAS_KABIN_CHOICES, default="Economy")
+    pnr = models.CharField(max_length=10, default="")
     status_penerimaan = models.CharField(max_length=20, choices=Status.choices, default=Status.MENUNGGU)
-    created_at = models.DateTimeField(default=timezone.now)
+    timestamp = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["email_member", "flight_number", "tanggal_penerbangan", "nomor_tiket"],
+                name="unique_claim_per_flight",
+            )
+        ]
+
+    def __str__(self):
+        return f"CLM-{self.pk:03d}"
+
+    @property
+    def claim_id(self):
+        return f"CLM-{self.pk:03d}"
+
+
+class Transfer(models.Model):
+    email_member_1 = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="transfers_sent"
+    )
+    email_member_2 = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="transfers_received"
+    )
+    timestamp = models.DateTimeField(default=timezone.now)
+    jumlah = models.IntegerField()
+    catatan = models.CharField(max_length=255, blank=True, default="")
+
+    class Meta:
+        ordering = ["-timestamp"]
+
+    def __str__(self):
+        return f"Transfer {self.jumlah} miles dari {self.email_member_1} ke {self.email_member_2}"
