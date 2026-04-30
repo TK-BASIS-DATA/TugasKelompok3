@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<section class="space-y-6">
+    <div class="animate-rise rounded-3xl border border-white/70 bg-white/90 p-8 shadow-lg">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-aero-steel/70">Staf</p>
+                <h1 class="mt-2 font-display text-4xl text-aero-ink">{{ title }}</h1>
+                <p class="mt-3 max-w-3xl text-aero-steel/85">
+                    Kelola katalog hadiah Aero Miles, lengkap dengan penyedia, nilai miles, dan masa berlaku program.
+                </p>
+            </div>
+            <a href="{% url 'staf_tambah_hadiah' %}" class="inline-flex items-center justify-center rounded-full bg-aero-steel px-5 py-3 text-sm font-semibold text-white transition hover:bg-aero-ink">
+                Tambah Hadiah
+            </a>
+        </div>
+    </div>
+
+    <section class="animate-rise rounded-3xl border border-white/70 bg-white/90 p-6 shadow-lg">
+        <form method="get" class="grid gap-4 md:grid-cols-3">
+            <div>
+                <label class="mb-2 block text-sm font-semibold text-aero-ink">Penyedia</label>
+                {{ filter_form.penyedia }}
+            </div>
+            <div>
+                <label class="mb-2 block text-sm font-semibold text-aero-ink">Status</label>
+                {{ filter_form.status }}
+            </div>
+            <div class="flex items-end gap-3">
+                <button type="submit" class="rounded-full bg-aero-mint px-5 py-3 text-sm font-semibold text-white transition hover:bg-aero-steel">
+                    Terapkan Filter
+                </button>
+                <a href="{% url 'staf_kelola_hadiah' %}" class="rounded-full border border-aero-steel/20 px-5 py-3 text-sm font-semibold text-aero-steel transition hover:bg-aero-cloud">
+                    Reset
+                </a>
+            </div>
+        </form>
+    </section>
+
+    <section class="animate-rise overflow-hidden rounded-3xl border border-white/70 bg-white/90 shadow-lg">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-aero-cloud/80 text-sm">
+                <thead class="bg-aero-cloud/45 text-left text-aero-ink">
+                    <tr>
+                        <th class="px-5 py-4 font-semibold">Kode</th>
+                        <th class="px-5 py-4 font-semibold">Nama</th>
+                        <th class="px-5 py-4 font-semibold">Deskripsi</th>
+                        <th class="px-5 py-4 font-semibold">Penyedia</th>
+                        <th class="px-5 py-4 font-semibold">Miles</th>
+                        <th class="px-5 py-4 font-semibold">Periode Valid</th>
+                        <th class="px-5 py-4 font-semibold">Status</th>
+                        <th class="px-5 py-4 font-semibold">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-aero-cloud/70">
+                    {% for hadiah in hadiah_list %}
+                        <tr class="align-top">
+                            <td class="px-5 py-4 font-semibold text-aero-steel">{{ hadiah.kode_hadiah }}</td>
+                            <td class="px-5 py-4 font-semibold text-aero-ink">{{ hadiah.nama }}</td>
+                            <td class="px-5 py-4 text-aero-steel/85">{{ hadiah.deskripsi }}</td>
+                            <td class="px-5 py-4 text-aero-steel/85">
+                                <div class="font-semibold text-aero-ink">{{ hadiah.penyedia.nama }}</div>
+                                <div class="text-xs uppercase tracking-[0.16em] text-aero-steel/65">{{ hadiah.penyedia.id_penyedia }} · {{ hadiah.penyedia.get_jenis_display }}</div>
+                            </td>
+                            <td class="px-5 py-4 text-aero-steel/85">{{ hadiah.miles }}</td>
+                            <td class="px-5 py-4 text-aero-steel/85">{{ hadiah.valid_start_date }} s.d. {{ hadiah.program_end }}</td>
+                            <td class="px-5 py-4">
+                                {% if hadiah.is_active %}
+                                    <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Aktif</span>
+                                {% elif hadiah.is_expired %}
+                                    <span class="rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-700">Kedaluwarsa</span>
+                                {% else %}
+                                    <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">Belum Aktif</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-5 py-4">
+                                <div class="flex flex-col gap-2">
+                                    <a href="{% url 'staf_ubah_hadiah' hadiah.kode_hadiah %}" class="rounded-full border border-aero-steel/20 px-4 py-2 text-center font-semibold text-aero-steel transition hover:bg-aero-cloud">
+                                        Ubah
+                                    </a>
+                                    <form method="post" action="{% url 'staf_hapus_hadiah' hadiah.kode_hadiah %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="w-full rounded-full bg-rose-500 px-4 py-2 font-semibold text-white transition hover:bg-rose-600">
+                                            Hapus
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="8" class="px-5 py-10 text-center text-aero-steel/75">
+                                Belum ada hadiah yang tersimpan.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="border-t border-aero-cloud/70 bg-aero-cloud/20 px-5 py-4 text-xs text-aero-steel/80">
+            Hadiah hanya dapat dihapus bila periode program telah selesai.
+        </div>
+    </section>
+</section>
+{% endblock %}

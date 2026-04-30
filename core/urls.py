@@ -17,11 +17,24 @@ urlpatterns = [
     path("staf/kelola-klaim/", views.staff_page, {"title": "Kelola Klaim"}, name="staf_kelola_klaim"),
     path(
         "staf/kelola-hadiah-penyedia/",
-        views.staff_page,
-        {"title": "Kelola Hadiah dan Penyedia"},
+        views.hadiah_list_view,
         name="staf_kelola_hadiah",
     ),
-    path("staf/kelola-mitra/", views.staff_page, {"title": "Kelola Mitra"}, name="staf_kelola_mitra"),
+    path("staf/kelola-hadiah-penyedia/tambah/", views.hadiah_create_view, name="staf_tambah_hadiah"),
+    path(
+        "staf/kelola-hadiah-penyedia/<str:kode_hadiah>/ubah/",
+        views.hadiah_update_view,
+        name="staf_ubah_hadiah",
+    ),
+    path(
+        "staf/kelola-hadiah-penyedia/<str:kode_hadiah>/hapus/",
+        views.hadiah_delete_view,
+        name="staf_hapus_hadiah",
+    ),
+    path("staf/kelola-mitra/", views.mitra_list_view, name="staf_kelola_mitra"),
+    path("staf/kelola-mitra/tambah/", views.mitra_create_view, name="staf_tambah_mitra"),
+    path("staf/kelola-mitra/<str:email_mitra>/ubah/", views.mitra_update_view, name="staf_ubah_mitra"),
+    path("staf/kelola-mitra/<str:email_mitra>/hapus/", views.mitra_delete_view, name="staf_hapus_mitra"),
     path(
         "staf/laporan-transaksi/",
         views.staff_page,
