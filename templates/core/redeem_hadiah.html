@@ -57,7 +57,7 @@
 </div>
 
 <!-- Modal Redeem -->
-<div id="modalRedeem" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+<div id="modalRedeem" data-open-on-error="{{ form.errors|yesno:'true,false' }}" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
   <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 relative">
     <button onclick="document.getElementById('modalRedeem').classList.add('hidden')"
       class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl">✕</button>
@@ -94,8 +94,9 @@
 </div>
 
 <script>
-{% if form.errors %}
-document.getElementById('modalRedeem').classList.remove('hidden');
-{% endif %}
+const modalRedeem = document.getElementById('modalRedeem');
+if (modalRedeem.dataset.openOnError === 'true') {
+  modalRedeem.classList.remove('hidden');
+}
 </script>
 {% endblock %}

@@ -80,10 +80,20 @@
           </td>
           <td class="px-4 py-3">
             {% if c.status_penerimaan == "Menunggu" %}
-              <button onclick='openSetujuiModal({{ c.pk }}, "{{ c.claim_id }}", "{{ c.email_member.full_name }}", "{{ c.bandara_asal }} → {{ c.bandara_tujuan }}", "{{ c.kelas_kabin }}")'
-                class="text-green-600 hover:text-green-800 mr-2 text-lg" title="Setujui">✔</button>
-              <button onclick='openTolakModal({{ c.pk }}, "{{ c.claim_id }}", "{{ c.email_member.full_name }}", "{{ c.bandara_asal }} → {{ c.bandara_tujuan }}", "{{ c.kelas_kabin }}")'
-                class="text-red-500 hover:text-red-700 text-lg" title="Tolak">✘</button>
+              <button type="button"
+                data-claim-id="{{ c.pk }}"
+                data-klaim="{{ c.claim_id }}"
+                data-member="{{ c.email_member.full_name }}"
+                data-rute="{{ c.bandara_asal }} → {{ c.bandara_tujuan }}"
+                data-kelas="{{ c.kelas_kabin }}"
+                class="js-approve-claim text-green-600 hover:text-green-800 mr-2 text-lg" title="Setujui">✔</button>
+              <button type="button"
+                data-claim-id="{{ c.pk }}"
+                data-klaim="{{ c.claim_id }}"
+                data-member="{{ c.email_member.full_name }}"
+                data-rute="{{ c.bandara_asal }} → {{ c.bandara_tujuan }}"
+                data-kelas="{{ c.kelas_kabin }}"
+                class="js-reject-claim text-red-500 hover:text-red-700 text-lg" title="Tolak">✘</button>
             {% else %}
               <span class="text-gray-300 text-xs">—</span>
             {% endif %}
@@ -138,17 +148,54 @@
 </div>
 
 <script>
+function renderClaimDetail(targetId, klaim, member, rute, kelas) {
+  const target = document.getElementById(targetId);
+  target.replaceChildren();
+
+  [
+    ['Klaim', klaim],
+    ['Member', member],
+    ['Rute', rute],
+    ['Kelas', kelas],
+  ].forEach(([label, value]) => {
+    const line = document.createElement('div');
+    const strong = document.createElement('b');
+    strong.textContent = `${label}: `;
+    line.append(strong, value);
+    target.appendChild(line);
+  });
+}
 function openSetujuiModal(id, klaim, member, rute, kelas) {
   document.getElementById('setujuiClaimId').value = id;
-  document.getElementById('detailSetujui').innerHTML =
-    `<b>Klaim:</b> ${klaim}<br><b>Member:</b> ${member}<br><b>Rute:</b> ${rute}<br><b>Kelas:</b> ${kelas}`;
+  renderClaimDetail('detailSetujui', klaim, member, rute, kelas);
   document.getElementById('modalSetujui').classList.remove('hidden');
 }
 function openTolakModal(id, klaim, member, rute, kelas) {
   document.getElementById('tolakClaimId').value = id;
-  document.getElementById('detailTolak').innerHTML =
-    `<b>Klaim:</b> ${klaim}<br><b>Member:</b> ${member}<br><b>Rute:</b> ${rute}<br><b>Kelas:</b> ${kelas}`;
+  renderClaimDetail('detailTolak', klaim, member, rute, kelas);
   document.getElementById('modalTolak').classList.remove('hidden');
 }
+document.querySelectorAll('.js-approve-claim').forEach(button => {
+  button.addEventListener('click', () => {
+    openSetujuiModal(
+      button.dataset.claimId,
+      button.dataset.klaim,
+      button.dataset.member,
+      button.dataset.rute,
+      button.dataset.kelas
+    );
+  });
+});
+document.querySelectorAll('.js-reject-claim').forEach(button => {
+  button.addEventListener('click', () => {
+    openTolakModal(
+      button.dataset.claimId,
+      button.dataset.klaim,
+      button.dataset.member,
+      button.dataset.rute,
+      button.dataset.kelas
+    );
+  });
+});
 </script>
 {% endblock %}

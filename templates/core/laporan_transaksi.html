@@ -86,7 +86,7 @@
             {% if trx.miles_delta >= 0 %}+{% endif %}{{ trx.miles_delta|floatformat:"0" }}
           </td>
           <td class="px-4 py-3 text-center">
-            <form method="post" onsubmit="return confirm('Hapus transaksi #{{ trx.pk }}? Tindakan ini tidak bisa dibatalkan.')">
+            <form method="post" data-confirm-message="Hapus transaksi #{{ trx.pk }}? Tindakan ini tidak bisa dibatalkan." onsubmit="return confirm(this.dataset.confirmMessage)">
               {% csrf_token %}
               <input type="hidden" name="action" value="delete">
               <input type="hidden" name="trx_id" value="{{ trx.pk }}">

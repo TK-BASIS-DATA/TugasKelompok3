@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0004_transfer_and_more'),
+        ('core', '0004_redeem_package_models'),
     ]
 
     operations = [

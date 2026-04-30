@@ -67,10 +67,19 @@
           <td class="px-4 py-3 text-gray-500">{{ c.timestamp|date:"Y-m-d H:i" }}</td>
           <td class="px-4 py-3">
             {% if c.status_penerimaan == "Menunggu" %}
-              <button onclick='openEditModal({{ c.pk }}, "{{ c.maskapai }}", "{{ c.bandara_asal }}", "{{ c.bandara_tujuan }}", "{{ c.tanggal_penerbangan|date:"Y-m-d" }}", "{{ c.flight_number }}", "{{ c.nomor_tiket }}", "{{ c.kelas_kabin }}", "{{ c.pnr }}")'
-                class="text-aero-steel hover:text-aero-ink mr-2">✏️</button>
-              <button onclick="openBatalkanModal({{ c.pk }})"
-                class="text-red-500 hover:text-red-700">🗑</button>
+              <button type="button"
+                data-claim-id="{{ c.pk }}"
+                data-maskapai="{{ c.maskapai }}"
+                data-asal="{{ c.bandara_asal }}"
+                data-tujuan="{{ c.bandara_tujuan }}"
+                data-tanggal="{{ c.tanggal_penerbangan|date:'Y-m-d' }}"
+                data-flight="{{ c.flight_number }}"
+                data-tiket="{{ c.nomor_tiket }}"
+                data-kelas="{{ c.kelas_kabin }}"
+                data-pnr="{{ c.pnr }}"
+                class="js-edit-claim text-aero-steel hover:text-aero-ink mr-2">✏️</button>
+              <button type="button" data-claim-id="{{ c.pk }}"
+                class="js-cancel-claim text-red-500 hover:text-red-700">🗑</button>
             {% endif %}
           </td>
         </tr>
@@ -209,6 +218,24 @@ function openBatalkanModal(id) {
   document.getElementById('batalkanClaimId').value = id;
   document.getElementById('modalBatalkan').classList.remove('hidden');
 }
+document.querySelectorAll('.js-edit-claim').forEach(button => {
+  button.addEventListener('click', () => {
+    openEditModal(
+      button.dataset.claimId,
+      button.dataset.maskapai,
+      button.dataset.asal,
+      button.dataset.tujuan,
+      button.dataset.tanggal,
+      button.dataset.flight,
+      button.dataset.tiket,
+      button.dataset.kelas,
+      button.dataset.pnr
+    );
+  });
+});
+document.querySelectorAll('.js-cancel-claim').forEach(button => {
+  button.addEventListener('click', () => openBatalkanModal(button.dataset.claimId));
+});
 // Style form fields dari Django
 document.querySelectorAll('#modalAjukan select, #modalAjukan input, #modalEdit select, #modalEdit input').forEach(el => {
   el.classList.add('w-full', 'border', 'border-gray-300', 'rounded-lg', 'px-3', 'py-2', 'text-sm', 'focus:outline-none', 'focus:ring-2', 'focus:ring-aero-steel');
