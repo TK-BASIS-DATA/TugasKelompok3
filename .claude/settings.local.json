@@ -10,7 +10,14 @@
       "Bash(curl -s -b /tmp/cookies_member.txt -o /tmp/klaim_out.html -w \"%{http_code}\" http://127.0.0.1:8000/member/klaim-miles/)",
       "Bash(curl -s -b /tmp/cookies_member.txt -o /tmp/transfer_out.html -w \"%{http_code}\" http://127.0.0.1:8000/member/transfer-miles/)",
       "Bash(curl -s -c /tmp/cookies_staf.txt http://127.0.0.1:8000/)",
-      "Bash(python manage.py shell -c ' *)"
+      "Bash(python manage.py shell -c ' *)",
+      "Bash(git checkout *)",
+      "Bash(git merge *)",
+      "Bash(git stash *)",
+      "Bash(git fetch *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)"
     ]
   }
 }
