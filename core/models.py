@@ -122,6 +122,60 @@ KELAS_KABIN_CHOICES = [
 ]
 
 
+class Penyedia(models.Model):
+    class Jenis(models.TextChoices):
+        MASKAPAI = "maskapai", "Maskapai"
+        MITRA = "mitra", "Mitra"
+
+    id_penyedia = models.CharField(max_length=20, primary_key=True)
+    nama = models.CharField(max_length=100)
+    jenis = models.CharField(max_length=20, choices=Jenis.choices)
+
+    class Meta:
+        ordering = ["id_penyedia"]
+
+    def __str__(self):
+        return f"{self.id_penyedia} - {self.nama}"
+
+
+class Mitra(models.Model):
+    email_mitra = models.EmailField(primary_key=True)
+    penyedia = models.OneToOneField(Penyedia, on_delete=models.CASCADE, related_name="mitra")
+    nama_mitra = models.CharField(max_length=100)
+    tanggal_kerja_sama = models.DateField(default=timezone.localdate)
+
+    class Meta:
+        ordering = ["nama_mitra", "email_mitra"]
+
+    def __str__(self):
+        return self.nama_mitra
+
+
+class Hadiah(models.Model):
+    kode_hadiah = models.CharField(max_length=20, primary_key=True)
+    nama = models.CharField(max_length=100)
+    deskripsi = models.TextField()
+    penyedia = models.ForeignKey(Penyedia, on_delete=models.CASCADE, related_name="hadiah")
+    miles = models.PositiveIntegerField()
+    valid_start_date = models.DateField()
+    program_end = models.DateField()
+
+    class Meta:
+        ordering = ["nama", "kode_hadiah"]
+
+    def __str__(self):
+        return f"{self.kode_hadiah} - {self.nama}"
+
+    @property
+    def is_active(self):
+        today = timezone.localdate()
+        return self.valid_start_date <= today <= self.program_end
+
+    @property
+    def is_expired(self):
+        return self.program_end < timezone.localdate()
+
+
 class ClaimMissingMiles(models.Model):
     class Status(models.TextChoices):
         MENUNGGU = "Menunggu", "Menunggu"

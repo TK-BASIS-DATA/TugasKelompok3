@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<section class="space-y-6">
+    <div class="animate-rise rounded-3xl border border-white/70 bg-white/90 p-8 shadow-lg">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-aero-steel/70">Staf</p>
+                <h1 class="mt-2 font-display text-4xl text-aero-ink">{{ title }}</h1>
+                <p class="mt-3 max-w-3xl text-aero-steel/85">
+                    Daftarkan, perbarui, dan hapus mitra Aero Miles. Setiap mitra otomatis memiliki entri penyedia yang terhubung.
+                </p>
+            </div>
+            <a href="{% url 'staf_tambah_mitra' %}" class="inline-flex items-center justify-center rounded-full bg-aero-steel px-5 py-3 text-sm font-semibold text-white transition hover:bg-aero-ink">
+                Tambah Mitra
+            </a>
+        </div>
+    </div>
+
+    <section class="animate-rise overflow-hidden rounded-3xl border border-white/70 bg-white/90 shadow-lg">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-aero-cloud/80 text-sm">
+                <thead class="bg-aero-cloud/45 text-left text-aero-ink">
+                    <tr>
+                        <th class="px-5 py-4 font-semibold">Email Mitra</th>
+                        <th class="px-5 py-4 font-semibold">ID Penyedia</th>
+                        <th class="px-5 py-4 font-semibold">Nama Mitra</th>
+                        <th class="px-5 py-4 font-semibold">Tanggal Kerja Sama</th>
+                        <th class="px-5 py-4 font-semibold">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-aero-cloud/70">
+                    {% for mitra in mitra_list %}
+                        <tr class="align-top">
+                            <td class="px-5 py-4 text-aero-steel/85">{{ mitra.email_mitra }}</td>
+                            <td class="px-5 py-4 font-semibold text-aero-steel">{{ mitra.penyedia.id_penyedia }}</td>
+                            <td class="px-5 py-4 font-semibold text-aero-ink">{{ mitra.nama_mitra }}</td>
+                            <td class="px-5 py-4 text-aero-steel/85">{{ mitra.tanggal_kerja_sama }}</td>
+                            <td class="px-5 py-4">
+                                <div class="flex flex-col gap-2">
+                                    <a href="{% url 'staf_ubah_mitra' mitra.email_mitra %}" class="rounded-full border border-aero-steel/20 px-4 py-2 text-center font-semibold text-aero-steel transition hover:bg-aero-cloud">
+                                        Ubah
+                                    </a>
+                                    <form method="post" action="{% url 'staf_hapus_mitra' mitra.email_mitra %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="w-full rounded-full bg-rose-500 px-4 py-2 font-semibold text-white transition hover:bg-rose-600">
+                                            Hapus
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="5" class="px-5 py-10 text-center text-aero-steel/75">
+                                Belum ada mitra yang terdaftar.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="border-t border-aero-cloud/70 bg-aero-cloud/20 px-5 py-4 text-xs text-aero-steel/80">
+            Menghapus mitra juga akan menghapus seluruh hadiah yang disediakan mitra tersebut.
+        </div>
+    </section>
+</section>
+{% endblock %}

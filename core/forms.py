@@ -1,8 +1,16 @@
 from django import forms
 from django.contrib.auth import authenticate
 from django.contrib.auth.forms import PasswordChangeForm
+from django.utils import timezone
 
-from .models import MASKAPAI_CHOICES, StaffProfile, User
+from .models import Hadiah, MASKAPAI_CHOICES, Mitra, Penyedia, StaffProfile, User
+
+
+def _apply_input_classes(fields):
+    base_class = "w-full rounded-2xl border border-aero-cloud bg-white px-4 py-3 text-sm text-aero-ink outline-none transition focus:border-aero-mint focus:ring-2 focus:ring-aero-cloud"
+    for field in fields.values():
+        existing_class = field.widget.attrs.get("class", "")
+        field.widget.attrs["class"] = f"{existing_class} {base_class}".strip()
 
 
 class LoginForm(forms.Form):
@@ -150,3 +158,77 @@ class TransferForm(forms.Form):
                 f"Award miles tidak mencukupi. Tersedia: {profile.award_miles} miles."
             )
         return jumlah
+
+
+class HadiahForm(forms.ModelForm):
+    class Meta:
+        model = Hadiah
+        fields = [
+            "nama",
+            "penyedia",
+            "miles",
+            "deskripsi",
+            "valid_start_date",
+            "program_end",
+        ]
+        widgets = {
+            "deskripsi": forms.Textarea(attrs={"rows": 4}),
+            "valid_start_date": forms.DateInput(attrs={"type": "date"}),
+            "program_end": forms.DateInput(attrs={"type": "date"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["penyedia"].queryset = Penyedia.objects.order_by("jenis", "nama")
+        _apply_input_classes(self.fields)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        start_date = cleaned_data.get("valid_start_date")
+        end_date = cleaned_data.get("program_end")
+        if start_date and end_date and start_date > end_date:
+            raise forms.ValidationError("Tanggal mulai valid tidak boleh melewati tanggal akhir program.")
+        return cleaned_data
+
+
+class MitraForm(forms.ModelForm):
+    class Meta:
+        model = Mitra
+        fields = ["email_mitra", "nama_mitra", "tanggal_kerja_sama"]
+        widgets = {
+            "tanggal_kerja_sama": forms.DateInput(attrs={"type": "date"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            self.fields["email_mitra"].disabled = True
+        _apply_input_classes(self.fields)
+
+    def clean_tanggal_kerja_sama(self):
+        tanggal_kerja_sama = self.cleaned_data["tanggal_kerja_sama"]
+        if tanggal_kerja_sama > timezone.localdate():
+            raise forms.ValidationError("Tanggal kerja sama tidak boleh di masa depan.")
+        return tanggal_kerja_sama
+
+
+class HadiahFilterForm(forms.Form):
+    penyedia = forms.ModelChoiceField(
+        queryset=Penyedia.objects.none(),
+        required=False,
+        empty_label="Semua penyedia",
+    )
+    status = forms.ChoiceField(
+        required=False,
+        choices=[
+            ("", "Semua status"),
+            ("aktif", "Aktif"),
+            ("nonaktif", "Tidak aktif"),
+            ("kedaluwarsa", "Kedaluwarsa"),
+        ],
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["penyedia"].queryset = Penyedia.objects.order_by("jenis", "nama")
+        _apply_input_classes(self.fields)
