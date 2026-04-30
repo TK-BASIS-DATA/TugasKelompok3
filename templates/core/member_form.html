@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mx-auto py-6 max-w-lg">
+  <div class="bg-white rounded-xl shadow p-6">
+    <h1 class="text-2xl font-bold mb-4">{% if is_create %}Tambah Member{% else %}Edit Data Member{% endif %}</h1>
+    <form method="post" class="space-y-4">
+      {% csrf_token %}
+      {{ user_form.as_p }}
+      {% if not is_create %}
+        <div>
+          <label class="block font-semibold">Tier</label>
+          <select name="tier" class="input input-bordered w-full">
+            {% for t in tiers %}
+              <option value="{{ t }}" {% if member_profile.tier == t %}selected{% endif %}>{{ t }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      {% endif %}
+      <div class="flex gap-2 justify-end mt-6">
+        <div class="bg-white rounded-lg shadow border border-blue-300 px-4 py-3 flex gap-2">
+          <button type="submit" class="btn btn-primary">Simpan</button>
+          <p>|</p>
+          <a href="{% url 'staf_kelola_member' %}" class="btn btn-secondary">Batal</a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

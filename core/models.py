@@ -233,3 +233,30 @@ class Transfer(models.Model):
 
     def __str__(self):
         return f"Transfer {self.jumlah} miles dari {self.email_member_1} ke {self.email_member_2}"
+
+
+BENTUK_IDENTITAS_CHOICES = [
+    ("Paspor", "Paspor"),
+    ("KTP", "KTP"),
+    ("SIM", "SIM"),
+]
+
+# Model Identitas Member
+class Identitas(models.Model):
+    nomor = models.CharField(max_length=50, primary_key=True)
+    email_member = models.ForeignKey(User, on_delete=models.CASCADE, related_name="identitas", limit_choices_to={"role": "member"})
+    tanggal_habis = models.DateField()
+    tanggal_terbit = models.DateField()
+    negara_penerbit = models.CharField(max_length=50)
+    jenis = models.CharField(max_length=30, choices=BENTUK_IDENTITAS_CHOICES)
+
+    class Meta:
+        ordering = ["-tanggal_terbit"]
+        unique_together = ("nomor",)
+
+    def __str__(self):
+        return f"{self.nomor} ({self.jenis})"
+
+    @property
+    def is_expired(self):
+        return self.tanggal_habis < timezone.localdate()

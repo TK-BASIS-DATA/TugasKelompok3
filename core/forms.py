@@ -232,3 +232,22 @@ class HadiahFilterForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.fields["penyedia"].queryset = Penyedia.objects.order_by("jenis", "nama")
         _apply_input_classes(self.fields)
+
+from .models import Hadiah, MASKAPAI_CHOICES, Mitra, Penyedia, StaffProfile, User, Identitas, BENTUK_IDENTITAS_CHOICES
+
+# Form untuk Identitas Member
+class IdentitasForm(forms.ModelForm):
+    class Meta:
+        model = Identitas
+        fields = ["nomor", "jenis", "negara_penerbit", "tanggal_terbit", "tanggal_habis"]
+        widgets = {
+            "tanggal_terbit": forms.DateInput(attrs={"type": "date"}),
+            "tanggal_habis": forms.DateInput(attrs={"type": "date"}),
+            "jenis": forms.Select(choices=BENTUK_IDENTITAS_CHOICES),
+        }
+
+    def clean_nomor(self):
+        nomor = self.cleaned_data["nomor"]
+        if Identitas.objects.filter(nomor=nomor).exists():
+            raise forms.ValidationError("Nomor dokumen sudah terdaftar.")
+        return nomor

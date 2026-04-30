@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mx-auto py-6 max-w-lg">
+  <h1 class="text-2xl font-bold mb-4">Konfirmasi Hapus Member</h1>
+  <div class="mb-4">
+    <p>Apakah Anda yakin ingin menghapus member berikut?</p>
+    <ul class="list-disc ml-6 mt-2">
+      <li><b>Nomor Member:</b> {{ member_profile.nomor_member }}</li>
+      <li><b>Nama:</b> {{ member_profile.user.full_name }}</li>
+      <li><b>Email:</b> {{ member_profile.user.email }}</li>
+      <li><b>Tier:</b> {{ member_profile.tier }}</li>
+    </ul>
+    <p class="mt-2 text-red-600">Tindakan ini akan menghapus seluruh data terkait member ini (Identitas, Klaim, Transfer, Redeem).</p>
+  </div>
+  <form method="post" class="flex gap-2 mt-6">
+    <div class="bg-white rounded-lg shadow border border-red-300 px-4 py-3 flex gap-2">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-error">Ya, Hapus</button>
+      <p>|</p>
+      <a href="{% url 'staf_kelola_member' %}" class="btn btn-secondary">Batal</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -6,6 +6,8 @@ from django.db.models import Q, Sum
 from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
+from .models import Identitas
+from .forms import IdentitasForm
 
 from .forms import (
     ClaimMissingMilesForm,
@@ -267,6 +269,111 @@ def staff_page(request, title):
         return redirect("dashboard")
     return render(request, "core/placeholder.html", {"title": title})
 
+
+# ──────────────────────────────────────────────
+# CRUD MEMBER – STAF
+# ──────────────────────────────────────────────
+
+from django.core.paginator import Paginator
+
+@login_required
+def member_list_view(request):
+    if not _staff_only(request):
+        return redirect("dashboard")
+
+    query = request.GET.get("q", "")
+    tier_filter = request.GET.get("tier", "")
+    members = MemberProfile.objects.select_related("user").all()
+    if query:
+        members = members.filter(
+            Q(nomor_member__icontains=query)
+            | Q(user__email__icontains=query)
+            | Q(user__first_mid_name__icontains=query)
+            | Q(user__last_name__icontains=query)
+        )
+    if tier_filter:
+        members = members.filter(tier=tier_filter)
+    members = members.order_by("nomor_member")
+    paginator = Paginator(members, 20)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+    tiers = MemberProfile.objects.values_list("tier", flat=True).distinct()
+    return render(request, "core/member_list.html", {
+        "page_obj": page_obj,
+        "query": query,
+        "tier_filter": tier_filter,
+        "tiers": tiers,
+    })
+
+
+from .forms import ProfileUpdateForm
+
+@login_required
+@transaction.atomic
+def member_create_view(request):
+    if not _staff_only(request):
+        return redirect("dashboard")
+    user_form = MemberRegistrationForm(request.POST or None)
+    if request.method == "POST":
+        if user_form.is_valid():
+            user = user_form.save(commit=False)
+            user.role = User.Role.MEMBER
+            user.set_password(user_form.cleaned_data["password"])
+            user.save()
+            member_profile = MemberProfile.objects.create(
+                user=user,
+                nomor_member=_next_member_number(),
+                tier="Blue",
+                tanggal_bergabung=timezone.localdate(),
+            )
+            MilesTransaction.objects.create(
+                member=user,
+                deskripsi=f"Registrasi member {member_profile.nomor_member}",
+                miles_delta=0,
+            )
+            messages.success(request, "Member berhasil ditambahkan.")
+            return redirect("staf_kelola_member")
+    return render(request, "core/member_form.html", {"user_form": user_form, "is_create": True})
+
+
+@login_required
+@transaction.atomic
+def member_update_view(request, nomor_member):
+    if not _staff_only(request):
+        return redirect("dashboard")
+    member_profile = get_object_or_404(MemberProfile, nomor_member=nomor_member)
+    user = member_profile.user
+    user_form = ProfileUpdateForm(request.POST or None, instance=user)
+    if request.method == "POST":
+        if user_form.is_valid():
+            user_form.save()
+            # Update tier jika diberikan
+            new_tier = request.POST.get("tier")
+            if new_tier and new_tier != member_profile.tier:
+                member_profile.tier = new_tier
+                member_profile.save()
+            messages.success(request, "Data member berhasil diperbarui.")
+            return redirect("staf_kelola_member")
+    return render(request, "core/member_form.html", {
+        "user_form": user_form,
+        "member_profile": member_profile,
+        "is_create": False,
+        "tiers": MemberProfile.objects.values_list("tier", flat=True).distinct(),
+    })
+
+
+@login_required
+@transaction.atomic
+def member_delete_view(request, nomor_member):
+    if not _staff_only(request):
+        return redirect("dashboard")
+    member_profile = get_object_or_404(MemberProfile, nomor_member=nomor_member)
+    if request.method == "POST":
+        user = member_profile.user
+        user.delete()  # Akan menghapus seluruh data terkait (karena CASCADE)
+        messages.success(request, f"Member {nomor_member} berhasil dihapus.")
+        return redirect("staf_kelola_member")
+    return render(request, "core/member_confirm_delete.html", {"member_profile": member_profile})
 
 # ──────────────────────────────────────────────
 # CRUD CLAIM MISSING MILES – MEMBER
@@ -675,3 +782,71 @@ def mitra_delete_view(request, email_mitra):
         penyedia.delete()
         messages.success(request, f"Mitra {nama_mitra} beserta hadiah terkait berhasil dihapus.")
     return redirect("staf_kelola_mitra")
+
+# ──────────────────────────────────────────────
+# CRUD IDENTITAS MEMBER – MEMBER
+# ──────────────────────────────────────────────
+
+from django.contrib.auth.decorators import login_required
+
+@login_required
+def identitas_list_view(request):
+    if request.user.role != User.Role.MEMBER:
+        messages.error(request, "Halaman ini khusus member.")
+        return redirect("dashboard")
+    identitas_list = Identitas.objects.filter(email_member=request.user).order_by("-tanggal_terbit")
+    return render(request, "core/identitas_list.html", {"identitas_list": identitas_list})
+
+
+@login_required
+def identitas_create_view(request):
+    if request.user.role != User.Role.MEMBER:
+        messages.error(request, "Halaman ini khusus member.")
+        return redirect("dashboard")
+    form = IdentitasForm(request.POST or None)
+    if request.method == "POST":
+        if form.is_valid():
+            identitas = form.save(commit=False)
+            identitas.email_member = request.user
+            identitas.save()
+            messages.success(request, "Identitas berhasil ditambahkan.")
+            return redirect("member_identitas")
+    return render(request, "core/identitas_form.html", {"form": form, "is_create": True})
+
+
+@login_required
+def identitas_update_view(request, nomor):
+    if request.user.role != User.Role.MEMBER:
+        messages.error(request, "Halaman ini khusus member.")
+        return redirect("dashboard")
+    identitas = Identitas.objects.filter(nomor=nomor, email_member=request.user).first()
+    if not identitas:
+        messages.error(request, "Dokumen identitas tidak ditemukan.")
+        return redirect("member_identitas")
+    # Nomor tidak bisa diubah
+    class EditIdentitasForm(IdentitasForm):
+        class Meta(IdentitasForm.Meta):
+            exclude = ["nomor"]
+    form = EditIdentitasForm(request.POST or None, instance=identitas)
+    if request.method == "POST":
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Identitas berhasil diperbarui.")
+            return redirect("member_identitas")
+    return render(request, "core/identitas_form.html", {"form": form, "is_create": False, "identitas": identitas})
+
+
+@login_required
+def identitas_delete_view(request, nomor):
+    if request.user.role != User.Role.MEMBER:
+        messages.error(request, "Halaman ini khusus member.")
+        return redirect("dashboard")
+    identitas = Identitas.objects.filter(nomor=nomor, email_member=request.user).first()
+    if not identitas:
+        messages.error(request, "Dokumen identitas tidak ditemukan.")
+        return redirect("member_identitas")
+    if request.method == "POST":
+        identitas.delete()
+        messages.success(request, "Identitas berhasil dihapus.")
+        return redirect("member_identitas")
+    return render(request, "core/identitas_confirm_delete.html", {"identitas": identitas})
